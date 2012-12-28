@@ -12,17 +12,24 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""Tests for crcache.commands."""
+"""Tests for the quickstart command."""
 
-import unittest
+from cr_cache.commands import quickstart
+from cr_cache.ui.model import UI
+from cr_cache.tests import TestCase
 
-def test_suite():
-    """Test suite thunk, manually defined for Python 2.6."""
-    test_mods = [
-        '__init__',
-        'help',
-        'quickstart',
-    ]
-    test_names = ['cr_cache.tests.commands.test_' + name for name in test_mods]
-    loader = unittest.TestLoader()
-    return loader.loadTestsFromNames(test_names)
+
+class TestCommand(TestCase):
+
+    def get_test_ui_and_cmd(self,args=()):
+        ui = UI(args=args)
+        cmd = quickstart.quickstart(ui)
+        ui.set_command(cmd)
+        return ui, cmd
+
+    def test_shows_some_rest(self):
+        ui, cmd = self.get_test_ui_and_cmd()
+        self.assertEqual(0, cmd.execute())
+        self.assertEqual(1, len(ui.outputs))
+        self.assertEqual('rest', ui.outputs[0][0])
+        self.assertTrue('Overview' in ui.outputs[0][1])

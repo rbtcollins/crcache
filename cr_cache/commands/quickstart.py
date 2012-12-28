@@ -1,4 +1,27 @@
-Overview
+#
+# Copyright (c) 2013 crcache contributors
+# 
+# Licensed under either the Apache License, Version 2.0 or the BSD 3-clause
+# license at the users choice. A copy of both licenses are available in the
+# project source as Apache-2.0 and BSD. You may not use this file except in
+# compliance with one of these two licences.
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under these licenses is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# license you chose for the specific language governing permissions and
+# limitations under that license.
+
+"""Get a quickstart on crcache."""
+
+from cr_cache.commands import Command
+
+class quickstart(Command):
+    """Introductory documentation for cr_cache."""
+
+    def run(self):
+        # This gets written to README.rst by Makefile.
+        help = """Overview
 ++++++++
 
 crcache - Compute resource cache - is a command line tool for obtaining and
@@ -112,3 +135,6 @@ Copyright
 
 Contributions need to be dual licensed (see COPYING), but no copyright
 assignment or grants are needed.
+"""
+        self.ui.output_rest(help)
+        return 0

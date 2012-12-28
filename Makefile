@@ -12,17 +12,21 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""Tests for crcache.commands."""
+all: README.rst check
 
-import unittest
+.testrepository:
+	testr init
 
-def test_suite():
-    """Test suite thunk, manually defined for Python 2.6."""
-    test_mods = [
-        '__init__',
-        'help',
-        'quickstart',
-    ]
-    test_names = ['cr_cache.tests.commands.test_' + name for name in test_mods]
-    loader = unittest.TestLoader()
-    return loader.loadTestsFromNames(test_names)
+check: .testrepository
+	testr run --parallel
+
+check-xml:
+	testr run --parallel --subunit | subunit2junitxml -o test.xml -f | subunit2pyunit
+
+release:
+	./setup.py sdist upload --sign
+
+README.rst: cr_cache/commands/quickstart.py
+	./crcache quickstart > $@
+
+.PHONY: check check-xml release all
