@@ -14,5 +14,15 @@
 
 """Tests for the crcache config system."""
 
-from cr_cache.config import Config
+import os.path
+
+from cr_cache import config
 from cr_cache.tests import TestCase
+
+class TestConfig(TestCase):
+
+    def test_search_path(self):
+        homedir_config = os.path.join(self.homedir, '.config', 'crcache')
+        cwd_config = os.path.join(os.getcwd(), '.crcache')
+        expected_path = [homedir_config, cwd_config]
+        self.assertEqual(expected_path, config.default_path())

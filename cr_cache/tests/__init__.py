@@ -34,7 +34,7 @@ class TestCase(testtools.TestCase, testresources.ResourcedTestCase):
     def setUp(self):
         super(TestCase, self).setUp()
         # Avoid any tests accidentally mutating ~.
-        self.useFixture(TempHomeDir())
+        self.homedir = self.useFixture(TempHomeDir()).path
 
 
 def test_suite():

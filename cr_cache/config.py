@@ -14,5 +14,17 @@
 
 """Configuration of cr_cache."""
 
+import os.path
+
+def default_path():
+    """Return a list of directories to search for configuration data.
+    
+    Defaults to ~/.config/crcache, $(pwd)/.crcache
+    """
+    homedir_config = os.path.expanduser(os.path.join('~', '.config', 'crcache'))
+    cwd_config = os.path.join(os.getcwd(), '.crcache')
+    return [homedir_config, cwd_config]
+
+
 class Config(object):
     """The main interface to crcache configuration."""
