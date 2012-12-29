@@ -12,24 +12,10 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""The basic interface for getting hold of compute resources.
+"""In-memory testing 'computing' resource."""
 
-Interesting modules:
-local : sources local compute resources.
-model : for testing.
-"""
+from cr_cache import source
 
-class AbstractSource(object):
-    """Defines the contract for a source.
-    
-    :attr config: The ConfigParser object containing the configuration of the
-        source.
-    """
+class Source(source.AbstractSource):
+    """An in-memory testing source."""
 
-    def __init__(self, config):
-        """Create an AbstractSource.
-
-        :param config: A ConfigParser config containing the configuration for
-            the source.
-        """
-        self.config = config

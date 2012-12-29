@@ -12,24 +12,12 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""The basic interface for getting hold of compute resources.
+"""Tests for the crcache.source.model module."""
 
-Interesting modules:
-local : sources local compute resources.
-model : for testing.
-"""
+from cr_cache.source import model
+from cr_cache.tests import TestCase
 
-class AbstractSource(object):
-    """Defines the contract for a source.
-    
-    :attr config: The ConfigParser object containing the configuration of the
-        source.
-    """
+class TestModelSource(TestCase):
 
-    def __init__(self, config):
-        """Create an AbstractSource.
-
-        :param config: A ConfigParser config containing the configuration for
-            the source.
-        """
-        self.config = config
+    def test_simple_construction(self):
+        model.Source(None)

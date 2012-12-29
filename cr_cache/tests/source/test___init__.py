@@ -14,5 +14,19 @@
 
 """Tests for the crcache.source interface."""
 
-from cr_cache.source import local
+import ConfigParser
+
+from cr_cache.source import local, model
 from cr_cache.tests import TestCase
+
+source_implementations = []
+source_implementations.append(('model', {'source_type': model.Source}))
+
+
+class TestConfigConstruction(TestCase):
+
+    scenarios = source_implementations
+
+    def test_construct_with_path(self):
+        config = ConfigParser.ConfigParser()
+        self.source_type(config)
