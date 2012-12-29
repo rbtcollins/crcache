@@ -26,5 +26,9 @@ def default_path():
     return [homedir_config, cwd_config]
 
 
-class Config(object):
-    """The main interface to crcache configuration."""
+def sources(roots):
+    """Return a list of the known sources."""
+    result = set()
+    for root in roots:
+        result.update(os.listdir(os.path.join(root, 'sources')))
+    return result

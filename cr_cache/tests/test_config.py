@@ -26,3 +26,8 @@ class TestConfig(TestCase):
         cwd_config = os.path.join(os.getcwd(), '.crcache')
         expected_path = [homedir_config, cwd_config]
         self.assertEqual(expected_path, config.default_path())
+
+    def test_finds_source_in_home(self):
+        root = config.default_path()[0]
+        os.makedirs(os.path.join(root, 'sources', 'foo'))
+        self.assertEqual(set(['foo']), config.sources([root]))
