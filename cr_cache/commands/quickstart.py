@@ -21,12 +21,29 @@ class quickstart(Command):
 
     def run(self):
         # This gets written to README.rst by Makefile.
-        help = """Overview
+        help = """CRCache
++++++++
+
+Copyright (c) 2013 crcache contributors
+
+Licensed under either the Apache License, Version 2.0 or the BSD 3-clause
+license at the users choice. A copy of both licenses are available in the
+project source as Apache-2.0 and BSD. You may not use this file except in
+compliance with one of these two licences.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under these licenses is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+license you chose for the specific language governing permissions and
+limitations under that license.
+
+Overview
 ++++++++
 
-crcache - Compute resource cache - is a command line tool for obtaining and
-reusing computing resources. This is a horribly abstract description and an
-elevator pitch is really really needed.
+crcache - Compute resource cache - is a command line tool that abstracts out
+obtaining, using and reusing computing resources. This permits separation of
+project concerns (such as 'run dpkg-buildpackage') from environmental concerns
+(such as using a Debian wheezy chroot to run the command in).
 
 crcache lets you write programs that need to scale to multiple machines without
 tying yourself to one particular provisioning system. For instance, running
@@ -35,27 +52,17 @@ crcache call, and the user can tell crcache where (and how) to obtain the
 compute resource to run the test in. A simple configuration system and command
 line API make it easy to reconfigure at will.
 
-A sample transcript to whet your appetite::
+The default configuration will run commands locally with no container or any
+other isolation::
 
-    $ crcache -p demo available
-    45
-    $ crcache -p demo status
-    15 allocated
-    45 in pool
-    2 provisioners active
-    $ crcache -p demo acquire -n 2
-    I1234 I5678
-    $ crcache -p demo release I5678
-    $ crcache -p demo run I1234 -- echo "foo"
+    $ crcache acquire
+    local
+    $ crcache run local echo foo
     foo
-    $ crcache -p demo release I1234
-    $ crcache -p demo run I1234
-    Resource I1234 is currently in the pool.
-    Exit code 1
-    $
+    $ crcache release local
 
-Here you can see me working with a pool of compute resources called demo. Demo
-is tracked locally and backed onto as many backends as I care to write.
+See the manual on https://crcache.readthedocs.org/ or in the docs/ subdirectory
+of the source tree for configuration details.
 
 Differences to "Cloud" APIs
 +++++++++++++++++++++++++++
@@ -69,9 +76,8 @@ key ways:
 * Programs that layer on it do not need to know about the whole cloud computing
   model, instead that is a matter for configuration by the user.
 
-* It manages state locally, rather than in a remote cloud. This is a key 
-  feature for the caching functionality, which is used to achieve low latency
-  execution of commands.
+* It manages state locally, allowing mix-and-match across many clouds and/or
+  local facilities such as chroots and containers.
 
 Installation
 ++++++++++++
@@ -92,51 +98,6 @@ Some of the provider plugins for cr_cache may be less portable. When a provider
 depends on things outside the standard library (or newer than the version range
 above), it is placed in a separate tree, so that its installation is optional.
 
-Developing crcache
-++++++++++++++++++
-
-Releases
-========
-
-To do a release:
-
-1. Update crcache/__init__.py to the new version.
-
-2. Commit, make a signed tag.
-
-3. Run `./setup.py sdist upload -s`.
-
-4. Push the tag and trunk.
-
-Hacking
-=======
-
-(See also doc/DESIGN.rst).
-
-The primary repository is https://github.com/rbtcollins/crcache. Please branch
-from there and use pull requests to submit changes. Bug tracking is the github
-bug tracker.
-
-Coding style
-============
-
-Pep8. Be liberal with pylint. Pragmatism over purity.
-
-Test everything that can be sensibly tested.
-
-Tests
-=====
-
-Can be run either with `./setup.py test` (which should install the needed
-dependencies) or `testr run` (if you have installed testrepository). If for
-some reason `setup.py test` does not install dependencies, they can be found
-by looking in ``setup.py``.
-
-Copyright
-=========
-
-Contributions need to be dual licensed (see COPYING), but no copyright
-assignment or grants are needed.
 """
         self.ui.output_rest(help)
         return 0

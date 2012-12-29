@@ -13,6 +13,7 @@ Contents:
 
    MANUAL
    DESIGN
+   DEVELOPERS
 
 
 Indices and tables
