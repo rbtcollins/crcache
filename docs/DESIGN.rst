@@ -1,12 +1,15 @@
 Design / Architecture of crcache
 ++++++++++++++++++++++++++++++++
 
-Primary Goal
-============
+Primary Goals
+=============
 
-Provide an abstraction layer so that test runners like testrepository or in
-general any process that needs to run in isolated or repeatable environments
-can do so without needing to re-invent the wheel.
+* Provide an abstraction layer so that test runners like testrepository or in
+  general any process that needs to run in isolated or repeatable environments
+  can do so without needing to re-invent the wheel.
+
+* Make it possible for projects to have project specific config in-tree and
+  machine/environment specific config maintained on the machine/environment.
 
 Musts
 =====
@@ -102,6 +105,11 @@ file systems. This offers huge performance benefits when used, so this becomes
 a necessary concept:
 
 4. Filesystem exporting.
+
+We need to let users run arbitrary code under crcaches control from time to
+time, so thats also a necessary concept:
+
+5. Extension points.
 
 The lifecycle of a resource, with all optimisations in place, will be something
 like:

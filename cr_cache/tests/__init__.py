@@ -22,6 +22,7 @@ the tests for cr_cache.commands itself are in cr_cache.tests.test___init__.
 
 import unittest
 
+from fixtures import TempHomeDir
 import testresources
 from testscenarios import generate_scenarios
 import testtools
@@ -30,15 +31,22 @@ import testtools
 class TestCase(testtools.TestCase, testresources.ResourcedTestCase):
     """Make all tests have resource support."""
 
+    def setUp(self):
+        super(TestCase, self).setUp()
+        # Avoid any tests accidentally mutating ~.
+        self.useFixture(TempHomeDir())
+
 
 def test_suite():
     """Test suite thunk, manually defined for Python 2.6."""
     test_mods = [
+        'config',
     ]
     test_names = ['cr_cache.tests.test_' + name for name in test_mods]
     test_pkgs = [
         'arguments',
         'commands',
+        'source',
         'store',
         'ui',
     ]
