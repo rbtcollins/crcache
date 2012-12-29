@@ -31,3 +31,15 @@ class TestConfig(TestCase):
         root = config.default_path()[0]
         os.makedirs(os.path.join(root, 'sources', 'foo'))
         self.assertEqual(set(['foo']), config.sources([root]))
+
+    def test_source_dirs(self):
+        root1 = os.path.join(self.homedir, 'conf1')
+        root2 = os.path.join(self.homedir, 'conf2')
+        os.makedirs(os.path.join(root1, 'sources', 'foo'))
+        os.makedirs(os.path.join(root2, 'sources', 'foo'))
+        os.makedirs(os.path.join(root2, 'sources', 'bar'))
+        # config.source_dirs finds the first dir for foo, and the bar in the
+        # second dir.
+        self.assertEqual({'foo': os.path.join(root1, 'sources', 'foo'), 
+            'bar': os.path.join(root2, 'sources', 'bar')},
+            config.source_dirs([root1, root2]))

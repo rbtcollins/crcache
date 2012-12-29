@@ -28,7 +28,15 @@ def default_path():
 
 def sources(roots):
     """Return a list of the known sources."""
-    result = set()
+    return set(source_dirs(roots).keys())
+
+
+def source_dirs(roots):
+    """Return a map of source name -> config dir."""
+    result = {}
     for root in roots:
-        result.update(os.listdir(os.path.join(root, 'sources')))
+        for name in os.listdir(os.path.join(root, 'sources')):
+            if name in result:
+                continue
+            result[name] = os.path.join(root, 'sources', name)
     return result

@@ -27,7 +27,10 @@ project binds to.
 Search path
 -----------
 
-Configuration is looked up in ~/.config/crcache and $(pwd)/.crcache.
+Configuration is looked up in ~/.config/crcache and $(pwd)/.crcache. Where
+something is defined in both places, the first found definition wins, allowing
+local configuration to supercede any configuration supplied in a project (which
+might be version controlled and thus harder to change without side effects).
 
 Sources
 -------
