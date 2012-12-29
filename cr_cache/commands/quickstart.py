@@ -111,6 +111,8 @@ To do a release:
 Hacking
 =======
 
+(See also doc/DESIGN.rst).
+
 The primary repository is https://github.com/rbtcollins/crcache. Please branch
 from there and use pull requests to submit changes. Bug tracking is the github
 bug tracker.
