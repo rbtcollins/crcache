@@ -79,6 +79,8 @@ class Cache(object):
             for instance in to_discard:
                 del self.store['resource/' + instance]
             self._set_remove('pool/' + self.name, to_discard)
+        if not to_discard:
+            return
         self._discard(to_discard)
 
     def fill_reserve(self):
@@ -111,6 +113,20 @@ class Cache(object):
             instances = new_instances + cached
             self._update_set('allocated/' + self.name, instances)
             return set([self.name + '-' + instance for instance in instances])
+
+    def provision_from_cache(self, count):
+        """Request up to count instances but only cached ones.
+        
+        This difference from provision() in that it will return up to the
+        requested amount rather than all-or-nothing, and it never triggers
+        a backend-provisioning call.
+        """
+        with write_locked(self.store):
+            existing = set(self._get_set('pool/' + self.name))
+            allocated = set(self._get_set('allocated/' + self.name))
+            cached = list(existing - allocated)[:count]
+            self._update_set('allocated/' + self.name, cached)
+            return set([self.name + '-' + instance for instance in cached])
 
     def _get_resources(self, count):
         """Get some resources.

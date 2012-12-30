@@ -132,6 +132,12 @@ class TestCache(TestCase):
         c = cache.Cache("foo", provide, None, memory.Store({}), maximum=2)
         self.assertThat(lambda: c.provision(3), raises(ValueError))
 
+    def test_provision_from_cache(self):
+        provide = lambda count:[str(c) for c in range(count)]
+        c = cache.Cache("foo", provide, None, memory.Store({}), reserve=4)
+        c.discard(c.provision(2))
+        self.assertEqual(set(['foo-0', 'foo-1']), c.provision_from_cache(5))
+
     def test_discard_single(self):
         provide = lambda count:[str(c) for c in range(count)]
         discard = lambda instances:None
@@ -172,4 +178,3 @@ class TestCache(TestCase):
             self.assertEqual('0', c.store['pool/foo'])
             self.assertThat(lambda:c.store['resource/1'], raises(KeyError))
             self.assertEqual('foo', c.store['resource/0'])
-
