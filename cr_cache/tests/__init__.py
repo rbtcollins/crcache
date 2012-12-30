@@ -40,6 +40,7 @@ class TestCase(testtools.TestCase, testresources.ResourcedTestCase):
 def test_suite():
     """Test suite thunk, manually defined for Python 2.6."""
     test_mods = [
+        'cache',
         'config',
     ]
     test_names = ['cr_cache.tests.test_' + name for name in test_mods]
