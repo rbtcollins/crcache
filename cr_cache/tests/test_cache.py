@@ -50,9 +50,6 @@ class TestCache(TestCase):
         cache.Cache("bar", None, children=[c])
         cache.Cache("bar", None, reserve=1, children=[c])
         cache.Cache("foo", None, maximum=1, children=[c])
-        # reserve is upped to sum() child reserves.
-        self.assertEqual(2,
-            cache.Cache("bar", None, reserve=1, children=[c]).reserve)
         # maximum is clamped to sum() child maximums.
         self.assertEqual(4,
             cache.Cache("bar", None, maximum=10, children=[c]).maximum)
@@ -236,3 +233,22 @@ class TestCache(TestCase):
         self.assertEqual(4, c.available())
         c.discard(c.provision(2))
         self.assertEqual(4, c.available())
+
+    def test_discard_returns_to_child_cache(self):
+        store = memory.Store({})
+        gen = iter(range(4))
+        def provide(count):
+            result = []
+            for _ in range(count):
+                result.append(str(gen.next()))
+            return result
+        c1 = cache.Cache(
+            "c1", store, provide, lambda x:None, reserve=1, maximum=2)
+        c2 = cache.Cache(
+            "c2", store, provide, lambda x:None, reserve=1, maximum=2)
+        c = cache.Cache("foo", store, children=[c1, c2])
+        c.provision(4)
+        c.discard(['foo-c1-1', 'foo-c2-2'])
+        c.discard(['foo-c1-0', 'foo-c2-3'])
+        self.assertEqual(set(['c1-0']), c1.provision(1))
+        self.assertEqual(set(['c2-3']), c2.provision(1))

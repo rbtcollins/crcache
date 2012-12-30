@@ -29,8 +29,7 @@ class Cache(object):
     :attr name: The name of the cache.
     :attr store: The crcache.store.AbstractStore being used to persist cache
         state.
-    :attr reserve: The low water policy point for the cache. This is never
-        lower than the sum of the lower water policies of any child caches.
+    :attr reserve: The low water policy point for the cache.
     :attr maximum: The high water policy point for the cache.
         This is never higher than the sum of the high water policies of any
         child caches.
@@ -64,8 +63,6 @@ class Cache(object):
                 raise ValueError(
                     "Must supply either children or callbacks, not both")
         if self.children:
-            child_reserve = sum(map(lambda x:x.reserve, self.children))
-            self.reserve = max(child_reserve, self.reserve)
             child_maximums = map(lambda x:x.maximum, self.children)
             if 0 not in child_maximums:
                 self.maximum = min(sum(child_maximums), self.maximum)
@@ -113,7 +110,18 @@ class Cache(object):
             self._set_remove('pool/' + self.name, to_discard)
         if not to_discard:
             return
-        self._discard(to_discard)
+        if self.children:
+            discard_map = {}
+            for instance in to_discard:
+                name, _ = instance.split('-', 1)
+                discard_map.setdefault(name, []).append(instance)
+            for child in self.children:
+                if child.name in discard_map:
+                    child.discard(discard_map[child.name])
+            # Note that discards for no longer configured children are
+            # currently silently discarded.
+        else:
+            self._discard(to_discard)
 
     def fill_reserve(self):
         """If the cache is below the low watermark, fill it up."""
@@ -203,9 +211,11 @@ class Cache(object):
         :param items: A list of strings.
         """
         try:
-            existing_instances = self.store[setname]
+            existing_instances = [self.store[setname]]
+            if existing_instances == ['']:
+                existing_instances = []
             self.store[setname] = ','.join(
-                sorted(list(items) + [existing_instances]))
+                sorted(list(items) + existing_instances))
         except KeyError:
             self.store[setname] = ','.join(sorted(items))
 
