@@ -25,12 +25,43 @@ from cr_cache.tests import TestCase
 class TestCache(TestCase):
 
     def test_construct(self):
-        # Cache objects need a name, a provision callback, a discard callback
-        # a store, an optional reserve watermark, an optional maximum
-        # watermark.
-        c = cache.Cache("foo", None, None, None)
-        c = cache.Cache("foo", None, None, None, reserve=1)
-        c = cache.Cache("foo", None, None, None, maximum=1)
+        # Cache objects need a name, an optional provision callback, an
+        # optional discard callback a store, an optional reserve watermark, an
+        # optional maximum watermark and optional child caches.
+        c = cache.Cache(
+            "foo", None, provision=lambda x:[], discard=lambda x:None,
+            reserve=2, maximum=4)
+        # Missing provision or discard callbacks implies a need for children.
+        # Neither
+        self.assertThat(lambda:cache.Cache("bar", None, children=[]),
+            raises(ValueError))
+        # Missing discard
+        self.assertThat(
+            lambda:cache.Cache("bar", None, provision=lambda x:[], children=[]),
+            raises(ValueError))
+        # Missing provision
+        self.assertThat(
+            lambda:cache.Cache("bar", None, discard=lambda x:None, children=[]),
+            raises(ValueError))
+        # provision + discard + children
+        self.assertThat(
+            lambda:cache.Cache("bar", None, provision=lambda x:[],
+            discard=lambda x:None, children=[c]), raises(ValueError))
+        cache.Cache("bar", None, children=[c])
+        cache.Cache("bar", None, reserve=1, children=[c])
+        cache.Cache("foo", None, maximum=1, children=[c])
+        # reserve is upped to sum() child reserves.
+        self.assertEqual(2,
+            cache.Cache("bar", None, reserve=1, children=[c]).reserve)
+        # maximum is clamped to sum() child maximums.
+        self.assertEqual(4,
+            cache.Cache("bar", None, maximum=10, children=[c]).maximum)
+        # Except when any child is unlimited
+        c2 = cache.Cache(
+            "foo", None, provision=lambda x:[], discard=lambda x:None)
+        self.assertEqual(10,
+            cache.Cache("bar", None, maximum=10, children=[c, c2]).maximum)
+
 
     def test_fill_reserve(self):
         gen = iter(range(10))
@@ -39,7 +70,8 @@ class TestCache(TestCase):
             for _ in range(count):
                 result.append(str(gen.next()))
             return result
-        c = cache.Cache("foo", provide, None, memory.Store({}), reserve=3)
+        c = cache.Cache(
+            "foo", memory.Store({}), provide, lambda x:None, reserve=3)
         c.provision(1)
         c.fill_reserve()
         # Check its all mapped correctly.
@@ -52,7 +84,7 @@ class TestCache(TestCase):
 
     def test_provision_single(self):
         provide = lambda count:[str(c) for c in range(count)]
-        c = cache.Cache("foo", provide, None, memory.Store({}))
+        c = cache.Cache("foo", memory.Store({}), provide, lambda x:None)
         # One instance should be returned
         self.assertEqual(set(['foo-0']), c.provision(1))
         # The instance should have been mapped in both directions in the store.
@@ -62,7 +94,7 @@ class TestCache(TestCase):
 
     def test_provision_several(self):
         provide = lambda count:[str(c) for c in range(count)]
-        c = cache.Cache("foo", provide, None, memory.Store({}))
+        c = cache.Cache("foo", memory.Store({}), provide, lambda x:None)
         # Three instance should be returned
         self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
         # The instances should have been mapped in both directions in the store.
@@ -79,7 +111,7 @@ class TestCache(TestCase):
             for _ in range(count):
                 result.append(str(gen.next()))
             return result
-        c = cache.Cache("foo", provide, None, memory.Store({}))
+        c = cache.Cache("foo", memory.Store({}), provide, lambda x:None)
         self.assertEqual(set(['foo-0', 'foo-1']), c.provision(2))
         self.assertEqual(set(['foo-2', 'foo-3']), c.provision(2))
         # The instances should have been mapped in both directions in the store.
@@ -98,7 +130,7 @@ class TestCache(TestCase):
                 result.append(str(gen.next()))
             return result
         discard = lambda instances:None
-        c = cache.Cache("foo", provide, discard, memory.Store({}), 2)
+        c = cache.Cache("foo", memory.Store({}), provide, discard, reserve=2)
         c.discard(c.provision(2))
         self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
         # The instances should have been mapped in both directions in the store.
@@ -110,7 +142,8 @@ class TestCache(TestCase):
 
     def test_provision_to_cap(self):
         provide = lambda count:[str(c) for c in range(count)]
-        c = cache.Cache("foo", provide, None, memory.Store({}), maximum=2)
+        c = cache.Cache(
+            "foo", memory.Store({}), provide, lambda x:None, maximum=2)
         c.provision(2)
 
     def test_provision_at_cap(self):
@@ -120,7 +153,8 @@ class TestCache(TestCase):
             for _ in range(count):
                 result.append(str(gen.next()))
             return result
-        c = cache.Cache("foo", provide, None, memory.Store({}), maximum=2)
+        c = cache.Cache(
+            "foo", memory.Store({}), provide, lambda x:None, maximum=2)
         c.provision(2)
         self.assertThat(lambda: c.provision(1), raises(ValueError))
         with read_locked(c.store):
@@ -129,19 +163,21 @@ class TestCache(TestCase):
 
     def test_provision_beyond_cap(self):
         provide = lambda count:[str(c) for c in range(count)]
-        c = cache.Cache("foo", provide, None, memory.Store({}), maximum=2)
+        c = cache.Cache(
+            "foo", memory.Store({}), provide, lambda x:None, maximum=2)
         self.assertThat(lambda: c.provision(3), raises(ValueError))
 
     def test_provision_from_cache(self):
         provide = lambda count:[str(c) for c in range(count)]
-        c = cache.Cache("foo", provide, None, memory.Store({}), reserve=4)
+        c = cache.Cache(
+            "foo", memory.Store({}), provide, lambda x:None, reserve=2)
         c.discard(c.provision(2))
         self.assertEqual(set(['foo-0', 'foo-1']), c.provision_from_cache(5))
 
     def test_discard_single(self):
         provide = lambda count:[str(c) for c in range(count)]
         discard = lambda instances:None
-        c = cache.Cache("foo", provide, discard, memory.Store({}))
+        c = cache.Cache("foo", memory.Store({}), provide, discard)
         c.provision(2)
         c.discard(['foo-0'])
         # The instance should have been unmapped in both directions from the
@@ -154,7 +190,7 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         calls = []
         discard = lambda instances:calls.append(instances)
-        c = cache.Cache("foo", provide, discard, memory.Store({}))
+        c = cache.Cache("foo", memory.Store({}), provide, discard)
         c.provision(4)
         c.discard(['foo-0', 'foo-2'])
         self.assertEqual([['0', '2']], calls)
@@ -169,7 +205,7 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         calls = []
         discard = lambda instances:calls.append(instances)
-        c = cache.Cache("foo", provide, discard, memory.Store({}), reserve=1)
+        c = cache.Cache("foo", memory.Store({}), provide, discard, reserve=1)
         c.discard(c.provision(2))
         self.assertEqual([['1']], calls)
         # The instance should have been unmapped in both directions from the

@@ -23,20 +23,29 @@ class Cache(object):
     to track owned instances, allocated/name to track instances handed out
     to users, and resource/instance, to map instances back to the cache.
 
+    The cache is a hierarchical composite structure - each cache can have
+    child caches that it draws resources from.
+
     :attr name: The name of the cache.
     :attr store: The crcache.store.AbstractStore being used to persist cache
         state.
-    :attr reserve: The low water policy point for the cache.
+    :attr reserve: The low water policy point for the cache. This is never
+        lower than the sum of the lower water policies of any child caches.
     :attr maximum: The high water policy point for the cache.
+        This is never higher than the sum of the high water policies of any
+        child caches.
     """
 
-    def __init__(self, name, provision, discard, store, reserve=0, maximum=0):
+    def __init__(self, name, store, provision=None, discard=None,
+        children=(), reserve=0, maximum=0):
         """Create a Cache.
 
         :param name: The name of the cache, used in storing the cache state.
-        :param provision: A callback to obtain one or more instances.
-        :param discard: A callback to discard one or more instances.
         :param store: A cr_cache.store for persisting the cache metadata.
+        :param provision: Optional callback to obtain one or more instances.
+        :param discard: Optional callback to discard one or more instances.
+        :param children: Optional list of child caches. A cache may either
+            have provision + discard callbacks, or child caches, but not both.
         :param reserve: If non-zero, only discard instances returned to the
             cache via discard, if the total provisioned-but-not-discarded would
             be above the reserve.
@@ -49,6 +58,17 @@ class Cache(object):
         self.store = store
         self.reserve = reserve
         self.maximum = maximum
+        self.children = children
+        if ((self.children and (discard or provision)) or
+            (not self.children and (not discard or not provision))):
+                raise ValueError(
+                    "Must supply either children or callbacks, not both")
+        if self.children:
+            child_reserve = sum(map(lambda x:x.reserve, self.children))
+            self.reserve = max(child_reserve, self.reserve)
+            child_maximums = map(lambda x:x.maximum, self.children)
+            if 0 not in child_maximums:
+                self.maximum = min(sum(child_maximums), self.maximum)
 
     def discard(self, instances):
         """Discard instances.
