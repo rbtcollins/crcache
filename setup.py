@@ -96,6 +96,7 @@ setup(name='crcache',
         'cr_cache.tests.ui',
         ],
       install_requires=[
+        'extras',
         ],
       setup_requires=[
         'extras',

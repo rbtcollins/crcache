@@ -10,6 +10,15 @@ requirement for testing environments, and having an abstraction layer allows
 a single project setup to scale in dramatically different ways just by the
 user reconfiguring their crcache config.
 
+Requirements
+============
+
+* Python 2.6+ or 3.2+
+
+* The 'extras' Python package.
+
+* For testing a number of other packages (see setup.py).
+
 Installation
 ============
 
@@ -163,3 +172,9 @@ Returns a compute resource from use::
     $ crcache status pool
     source  cached  in-use max
     pool    1       0      1
+
+Internals
+=========
+
+Each source stores the instances it has obtained and has cached in the crcache
+store, stored in $HOME/.cache/crcache/state.dbm.
