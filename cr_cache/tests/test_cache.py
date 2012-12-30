@@ -54,7 +54,7 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         c = cache.Cache("foo", provide, None, memory.Store({}))
         # One instance should be returned
-        self.assertEqual(set(['0']), c.provision(1))
+        self.assertEqual(set(['foo-0']), c.provision(1))
         # The instance should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0', c.store['pool/foo'])
@@ -64,7 +64,7 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         c = cache.Cache("foo", provide, None, memory.Store({}))
         # Three instance should be returned
-        self.assertEqual(set(['0', '1', '2']), c.provision(3))
+        self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0,1,2', c.store['pool/foo'])
@@ -80,8 +80,8 @@ class TestCache(TestCase):
                 result.append(str(gen.next()))
             return result
         c = cache.Cache("foo", provide, None, memory.Store({}))
-        self.assertEqual(set(['0', '1']), c.provision(2))
-        self.assertEqual(set(['2', '3']), c.provision(2))
+        self.assertEqual(set(['foo-0', 'foo-1']), c.provision(2))
+        self.assertEqual(set(['foo-2', 'foo-3']), c.provision(2))
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0,1,2,3', c.store['pool/foo'])
@@ -101,7 +101,7 @@ class TestCache(TestCase):
         c = cache.Cache("foo", provide, discard, memory.Store({}), 2)
         c.provision(2)
         c.discard(['0', '1'])
-        self.assertEqual(set(['0', '1', '2']), c.provision(3))
+        self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0,1,2', c.store['pool/foo'])

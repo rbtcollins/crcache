@@ -85,6 +85,9 @@ class Cache(object):
     def provision(self, count):
         """Request count instances from the cache.
 
+        Instance ids that are returned are prefixed with the cache name, to
+        ensure no collisions between layered sources.
+
         :return: A list of instance ids.
         """
         with write_locked(self.store):
@@ -100,7 +103,7 @@ class Cache(object):
             new_instances = self._get_resources(count)
             instances = new_instances + cached
             self._update_set('allocated/' + self.name, instances)
-            return set(instances)
+            return set([self.name + '-' + instance for instance in instances])
 
     def _get_resources(self, count):
         """Get some resources.
