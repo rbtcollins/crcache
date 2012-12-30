@@ -16,6 +16,9 @@
 
 from cr_cache.store import write_locked, read_locked
 
+# Note: structure in this file is a little messy, but contained. Refactoring
+# recommended once the UI exercising all the use cases is in place.
+
 class Cache(object):
     """Keep track of compute resources.
     
