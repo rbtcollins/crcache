@@ -99,8 +99,7 @@ class TestCache(TestCase):
             return result
         discard = lambda instances:None
         c = cache.Cache("foo", provide, discard, memory.Store({}), 2)
-        c.provision(2)
-        c.discard(['0', '1'])
+        c.discard(c.provision(2))
         self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
@@ -138,7 +137,7 @@ class TestCache(TestCase):
         discard = lambda instances:None
         c = cache.Cache("foo", provide, discard, memory.Store({}))
         c.provision(2)
-        c.discard(['0'])
+        c.discard(['foo-0'])
         # The instance should have been unmapped in both directions from the
         # store.
         with read_locked(c.store):
@@ -151,7 +150,7 @@ class TestCache(TestCase):
         discard = lambda instances:calls.append(instances)
         c = cache.Cache("foo", provide, discard, memory.Store({}))
         c.provision(4)
-        c.discard(['0', '2'])
+        c.discard(['foo-0', 'foo-2'])
         self.assertEqual([['0', '2']], calls)
         # The instances should have been unmapped in both directions from the
         # store.
@@ -165,8 +164,7 @@ class TestCache(TestCase):
         calls = []
         discard = lambda instances:calls.append(instances)
         c = cache.Cache("foo", provide, discard, memory.Store({}), reserve=1)
-        c.provision(2)
-        c.discard(['0', '1'])
+        c.discard(c.provision(2))
         self.assertEqual([['1']], calls)
         # The instance should have been unmapped in both directions from the
         # store.

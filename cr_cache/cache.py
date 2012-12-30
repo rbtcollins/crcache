@@ -56,8 +56,15 @@ class Cache(object):
         As long as the cache is above the reserved count, discards will be
         passed to the discard routine immediately. Otherwise they will be
         held indefinitely.
+
+        :param instances: A list of string ids previously returned from a
+            provision() call.
         """
         instances = list(instances)
+        prefix = self.name + '-'
+        for instance in instances:
+            assert instance.startswith(prefix)
+        instances = [instance[len(prefix):] for instance in instances]
         # Lock first, to avoid races.
         to_discard = []
         with write_locked(self.store):
