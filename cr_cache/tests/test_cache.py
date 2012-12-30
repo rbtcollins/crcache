@@ -16,6 +16,8 @@
 
 import os.path
 
+from testtools.matchers import raises
+
 from cr_cache import cache
 from cr_cache.store import memory, read_locked
 from cr_cache.tests import TestCase
@@ -66,4 +68,31 @@ class TestCache(TestCase):
             self.assertEqual('foo', c.store['resource/1'])
             self.assertEqual('foo', c.store['resource/2'])
             self.assertEqual('foo', c.store['resource/3'])
+
+    def test_discard_single(self):
+        provide = lambda count:[str(c) for c in range(count)]
+        discard = lambda instances:None
+        c = cache.Cache("foo", provide, discard, memory.Store({}))
+        c.provision(2)
+        c.discard(['0'])
+        # The instance should have been unmapped in both directions from the
+        # store.
+        with read_locked(c.store):
+            self.assertEqual('1', c.store['pool/foo'])
+            self.assertThat(lambda:c.store['resource/0'], raises(KeyError))
+
+    def test_discard_multiple(self):
+        provide = lambda count:[str(c) for c in range(count)]
+        calls = []
+        discard = lambda instances:calls.append(instances)
+        c = cache.Cache("foo", provide, discard, memory.Store({}))
+        c.provision(4)
+        c.discard(['0', '2'])
+        self.assertEqual([['0', '2']], calls)
+        # The instances should have been unmapped in both directions from the
+        # store.
+        with read_locked(c.store):
+            self.assertEqual('1,3', c.store['pool/foo'])
+            self.assertThat(lambda:c.store['resource/0'], raises(KeyError))
+            self.assertThat(lambda:c.store['resource/2'], raises(KeyError))
 

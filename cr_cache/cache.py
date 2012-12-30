@@ -33,8 +33,32 @@ class Cache(object):
         :store: A cr_cache.store for persisting the cache metadata.
         """
         self.name = name
+        self._discard = discard
         self._provision = provision
         self.store = store
+
+    def discard(self, instances):
+        """Discard instances.
+
+        As long as the cache is above the reserved count, discards will be
+        passed to the discard routine immediately. Otherwise they will be
+        held indefinitely.
+        """
+        # Lock first, to avoid races.
+        to_discard = []
+        with write_locked(self.store):
+            for instance in instances:
+                to_discard.append(instance)
+        # XXX: Future - avoid long locks by having a gc queue and moving
+        # instances in there, and then doing the api call and finally cleanup.
+            for instance in to_discard:
+                del self.store['resource/' + instance]
+            existing_instances = set(
+                self.store['pool/' + self.name].split(','))
+            existing_instances.difference_update(to_discard)
+            self.store['pool/' + self.name] = ','.join(
+                sorted(existing_instances))
+        self._discard(to_discard)
 
     def provision(self, count):
         """Request count instances from the cache.
