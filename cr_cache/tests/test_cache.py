@@ -62,7 +62,6 @@ class TestCache(TestCase):
         self.assertEqual(10,
             cache.Cache("bar", None, maximum=10, children=[c, c2]).maximum)
 
-
     def test_fill_reserve(self):
         gen = iter(range(10))
         def provide(count):
@@ -140,11 +139,25 @@ class TestCache(TestCase):
             self.assertEqual('foo', c.store['resource/1'])
             self.assertEqual('foo', c.store['resource/2'])
 
+    def test_provision_prefers_child_cached_instances(self):
+        store = memory.Store({})
+        provide = lambda count:[str(c) for c in range(count)]
+        c1 = cache.Cache("c1", store, provide, lambda x:None, reserve=2)
+        c2 = cache.Cache("c2", store, provide, lambda x:None, reserve=2)
+        c1.fill_reserve()
+        c2.fill_reserve()
+        c = cache.Cache("foo", store, children=[c1, c2])
+        self.assertEqual(
+            set(['foo-c1-0', 'foo-c1-1', 'foo-c2-0', 'foo-c2-1']),
+            c.provision(4))
+
     def test_provision_to_cap(self):
         provide = lambda count:[str(c) for c in range(count)]
         c = cache.Cache(
             "foo", memory.Store({}), provide, lambda x:None, maximum=2)
+        self.assertEqual(2, c.available())
         c.provision(2)
+        self.assertEqual(0, c.available())
 
     def test_provision_at_cap(self):
         gen = iter(range(3))
@@ -214,3 +227,12 @@ class TestCache(TestCase):
             self.assertEqual('0', c.store['pool/foo'])
             self.assertThat(lambda:c.store['resource/1'], raises(KeyError))
             self.assertEqual('foo', c.store['resource/0'])
+
+    def test_discard_increases_available(self):
+        provide = lambda count:[str(c) for c in range(count)]
+        discard = lambda instances:None
+        c = cache.Cache(
+            "foo", memory.Store({}), provide, discard, reserve=1, maximum=4)
+        self.assertEqual(4, c.available())
+        c.discard(c.provision(2))
+        self.assertEqual(4, c.available())

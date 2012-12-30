@@ -80,10 +80,38 @@ class TestStoreContract(TestCase):
         s.lock_read()
         s.unlock()
 
+    def test_lock_read_reentrant(self):
+        s = self.make_store()
+        with write_locked(s):
+            s['f'] = 't'
+        s.lock_read()
+        try:
+            try:
+                s.lock_read()
+                s['f']
+            finally:
+                s.unlock()
+            s['f']
+        finally:
+            s.unlock()
+
     def test_lock_write_exist(self):
         s = self.make_store()
         s.lock_write()
         s.unlock()
+
+    def test_lock_write_reentrant(self):
+        s = self.make_store()
+        s.lock_write()
+        try:
+            try:
+                s.lock_write()
+                s['f'] = 't'
+            finally:
+                s.unlock()
+            s['f'] = 't'
+        finally:
+            s.unlock()
 
     def test_unlock_exist(self):
         s = self.make_store()

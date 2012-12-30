@@ -25,6 +25,7 @@ class Store(AbstractStore):
     def __init__(self, backend):
         self._backend = backend
         self._lock = 'u'
+        self._lock_count = 0
 
     def __getitem__(self, item):
         if self._lock not in 'rw':
@@ -42,10 +43,14 @@ class Store(AbstractStore):
         del self._backend[item]
 
     def unlock(self):
-        self._lock = 'u'
+        self._lock_count -= 1
+        if not self._lock_count:
+            self._lock = 'u'
 
     def lock_read(self):
         self._lock = 'r'
+        self._lock_count += 1
 
     def lock_write(self):
         self._lock = 'w'
+        self._lock_count += 1

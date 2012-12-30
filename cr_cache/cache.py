@@ -14,7 +14,7 @@
 
 """Resource Cache for caching resources."""
 
-from cr_cache.store import write_locked
+from cr_cache.store import write_locked, read_locked
 
 class Cache(object):
     """Keep track of compute resources.
@@ -69,6 +69,18 @@ class Cache(object):
             child_maximums = map(lambda x:x.maximum, self.children)
             if 0 not in child_maximums:
                 self.maximum = min(sum(child_maximums), self.maximum)
+
+    def available(self):
+        """Report on the number of resources that could be returned.
+
+        :return: A count of the number of available resources. 0 means
+            unlimited.
+        """
+        if not self.maximum:
+            return 0
+        with read_locked(self.store):
+            return self.maximum - len(
+                set(self._get_set('allocated/' + self.name)))
 
     def discard(self, instances):
         """Discard instances.
@@ -153,11 +165,36 @@ class Cache(object):
 
         Assumes the store is already locked.
         """
-        new_instances = self._provision(count)
-        for instance in new_instances:
-            self.store['resource/' + instance] = self.name
-        self._update_set('pool/' + self.name, new_instances)
-        return new_instances
+        # XXX: perhaps want a strategy object, hoist the complexity sideways?
+        cached_instances = []
+        # Gather cached resources first.
+        for child in self.children:
+            cached_instances.extend(
+                child.provision_from_cache(count-len(cached_instances)))
+        # Stash the grabbed instances, before doing calls that could block.
+        if cached_instances:
+            for instance in cached_instances:
+                self.store['resource/' + instance] = self.name
+            self._update_set('pool/' + self.name, cached_instances)
+        count -= len(cached_instances)
+        if self.children:
+            new_instances = []
+            for child in self.children:
+                if child.maximum:
+                    request_count = min(child.available(), count)
+                else:
+                    request_count = count
+                child_instances = child.provision(request_count)
+                for instance in child_instances:
+                    self.store['resource/' + instance] = self.name
+                self._update_set('pool/' + self.name, child_instances)
+                new_instances.extend(child_instances)
+        else:
+            new_instances = self._provision(count)
+            for instance in new_instances:
+                self.store['resource/' + instance] = self.name
+            self._update_set('pool/' + self.name, new_instances)
+        return cached_instances + new_instances
 
     def _update_set(self, setname, items):
         """Add items to the list stored in setname.
@@ -167,7 +204,8 @@ class Cache(object):
         """
         try:
             existing_instances = self.store[setname]
-            self.store[setname] = ','.join(sorted(items + [existing_instances]))
+            self.store[setname] = ','.join(
+                sorted(list(items) + [existing_instances]))
         except KeyError:
             self.store[setname] = ','.join(sorted(items))
 

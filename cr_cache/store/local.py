@@ -35,7 +35,7 @@ class Store(AbstractStore):
     def __init__(self):
         self.dbm_path = os.path.expanduser('~/.cache/crcache/state.dbm')
         self.dbm_lock = os.path.expanduser('~/.cache/crcache/state.lck')
-        self._locked = False
+        self._locked = 0
         # Check it is usable, create empty db if needed.
         dir = os.path.dirname(self.dbm_path)
         if not os.path.exists(dir):
@@ -55,24 +55,31 @@ class Store(AbstractStore):
         del self._db[item]
 
     def lock_read(self):
-        self._lock()
-        self._db = dbm.open(self.dbm_path, 'r')
+        if self._lock():
+            self._db = dbm.open(self.dbm_path, 'r')
 
     def lock_write(self):
-        self._lock()
-        self._db = dbm.open(self.dbm_path, 'w')
+        if self._lock():
+            self._db = dbm.open(self.dbm_path, 'w')
 
     def _lock(self):
+        if self._locked:
+            self._locked += 1
+            return False
         fd = os.open(self.dbm_lock, os.O_CREAT | os.O_EXCL)
         os.close(fd)
-        self._locked = True
+        self._locked = 1
+        return True
 
     def _unlock(self):
         if not self._locked:
             raise AssertionError('not locked')
+        self._locked -= 1
+        if self._locked:
+            return
         os.unlink(self.dbm_lock)
-        self._locked = False
 
     def unlock(self):
-        self._db.close()
+        if self._locked == 1:
+            self._db.close()
         self._unlock()
