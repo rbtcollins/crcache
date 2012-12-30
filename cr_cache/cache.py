@@ -19,23 +19,32 @@ from cr_cache.store import write_locked
 class Cache(object):
     """Keep track of compute resources.
     
+    Cache state is stored in a persistent store. The key pool/name is used
+    to track owned instances, allocated/name to track instances handed out
+    to users, and resource/instance, to map instances back to the cache.
+
     :attr name: The name of the cache.
     :attr store: The crcache.store.AbstractStore being used to persist cache
         state.
+    :attr reserve: The low water policy point for the cache.
     """
 
-    def __init__(self, name, provision, discard, store):
+    def __init__(self, name, provision, discard, store, reserve=0):
         """Create a Cache.
 
         :param name: The name of the cache, used in storing the cache state.
         :param provision: A callback to obtain one or more instances.
         :param discard: A callback to discard one or more instances.
-        :store: A cr_cache.store for persisting the cache metadata.
+        :param store: A cr_cache.store for persisting the cache metadata.
+        :param reserve: If non-zero, only discard instances returned to the
+            cache via discard, if the total provisioned-but-not-discarded would
+            be above the reserve.
         """
         self.name = name
         self._discard = discard
         self._provision = provision
         self.store = store
+        self.reserve = reserve
 
     def discard(self, instances):
         """Discard instances.
@@ -44,20 +53,21 @@ class Cache(object):
         passed to the discard routine immediately. Otherwise they will be
         held indefinitely.
         """
+        instances = list(instances)
         # Lock first, to avoid races.
         to_discard = []
         with write_locked(self.store):
-            for instance in instances:
-                to_discard.append(instance)
+            allocated = len(self._get_set('allocated/' + self.name))
+            keep_count = self.reserve - allocated + len(instances)
+            for pos, instance in enumerate(instances):
+                if pos >= keep_count:
+                    to_discard.append(instance)
+            self._set_remove('allocated/' + self.name, instances)
         # XXX: Future - avoid long locks by having a gc queue and moving
         # instances in there, and then doing the api call and finally cleanup.
             for instance in to_discard:
                 del self.store['resource/' + instance]
-            existing_instances = set(
-                self.store['pool/' + self.name].split(','))
-            existing_instances.difference_update(to_discard)
-            self.store['pool/' + self.name] = ','.join(
-                sorted(existing_instances))
+            self._set_remove('pool/' + self.name, to_discard)
         self._discard(to_discard)
 
     def provision(self, count):
@@ -69,10 +79,40 @@ class Cache(object):
         with write_locked(self.store):
             for instance in instances:
                 self.store['resource/' + instance] = self.name
-            try:
-                existing_instances = self.store['pool/' + self.name]
-                self.store['pool/' + self.name] = ','.join(
-                    instances + [existing_instances])
-            except KeyError:
-                self.store['pool/' + self.name] = ','.join(instances)
+            self._update_set('pool/' + self.name, instances)
+            self._update_set('allocated/' + self.name, instances)
             return instances
+
+    def _update_set(self, setname, items):
+        """Add items to the list stored in setname.
+
+        :param setname: A name like pool/foo.
+        :param items: A list of strings.
+        """
+        try:
+            existing_instances = self.store[setname]
+            self.store[setname] = ','.join(items + [existing_instances])
+        except KeyError:
+            self.store[setname] = ','.join(items)
+
+    def _get_set(self, setname):
+        """Get a serialised set from the store.
+
+        :param setname: A name like allocated/foo.
+        :return; A list of strings.
+        """
+        try:
+            existing_instances = self.store[setname]
+        except KeyError:
+            existing_instances = ''
+        return existing_instances.split(',')
+
+    def _set_remove(self, setname, items):
+        """Remove items from a stored list.
+
+        :param setname: A name like pool/foo.
+        :param items: An iterable of strings.
+        """
+        existing_instances = set(self._get_set(setname))
+        existing_instances.difference_update(items)
+        self.store[setname] = ','.join(sorted(existing_instances))

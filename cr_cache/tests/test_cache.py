@@ -26,8 +26,9 @@ class TestCache(TestCase):
 
     def test_construct(self):
         # Cache objects need a name, a provision callback, a discard callback
-        # and a store.
+        # a store, an optional reserve watermark.
         c = cache.Cache("foo", None, None, None)
+        c = cache.Cache("foo", None, None, None, reserve=1)
 
     def test_provision_single(self):
         provide = lambda count:[str(c) for c in range(count)]
@@ -95,4 +96,19 @@ class TestCache(TestCase):
             self.assertEqual('1,3', c.store['pool/foo'])
             self.assertThat(lambda:c.store['resource/0'], raises(KeyError))
             self.assertThat(lambda:c.store['resource/2'], raises(KeyError))
+
+    def test_discard_keeps_reserve_level(self):
+        provide = lambda count:[str(c) for c in range(count)]
+        calls = []
+        discard = lambda instances:calls.append(instances)
+        c = cache.Cache("foo", provide, discard, memory.Store({}), reserve=1)
+        c.provision(2)
+        c.discard(['0', '1'])
+        self.assertEqual([['1']], calls)
+        # The instance should have been unmapped in both directions from the
+        # store.
+        with read_locked(c.store):
+            self.assertEqual('0', c.store['pool/foo'])
+            self.assertThat(lambda:c.store['resource/1'], raises(KeyError))
+            self.assertEqual('foo', c.store['resource/0'])
 
