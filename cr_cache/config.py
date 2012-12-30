@@ -35,7 +35,11 @@ def source_dirs(roots):
     """Return a map of source name -> config dir."""
     result = {}
     for root in roots:
-        for name in os.listdir(os.path.join(root, 'sources')):
+        try:
+            names = os.listdir(os.path.join(root, 'sources'))
+        except OSError:
+            continue
+        for name in names:
             if name in result:
                 continue
             result[name] = os.path.join(root, 'sources', name)

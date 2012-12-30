@@ -32,6 +32,9 @@ class TestConfig(TestCase):
         os.makedirs(os.path.join(root, 'sources', 'foo'))
         self.assertEqual(set(['foo']), config.sources([root]))
 
+    def test_source_dirs_missing_paths(self):
+        config.source_dirs(config.default_path())
+
     def test_source_dirs(self):
         root1 = os.path.join(self.homedir, 'conf1')
         root2 = os.path.join(self.homedir, 'conf2')
