@@ -27,9 +27,10 @@ class Cache(object):
     :attr store: The crcache.store.AbstractStore being used to persist cache
         state.
     :attr reserve: The low water policy point for the cache.
+    :attr maximum: The high water policy point for the cache.
     """
 
-    def __init__(self, name, provision, discard, store, reserve=0):
+    def __init__(self, name, provision, discard, store, reserve=0, maximum=0):
         """Create a Cache.
 
         :param name: The name of the cache, used in storing the cache state.
@@ -39,12 +40,15 @@ class Cache(object):
         :param reserve: If non-zero, only discard instances returned to the
             cache via discard, if the total provisioned-but-not-discarded would
             be above the reserve.
+        :param maximum: If non-zero, reject requests for resources if the total
+            provisioned-but-not-discarded would exceed maximum.
         """
         self.name = name
         self._discard = discard
         self._provision = provision
         self.store = store
         self.reserve = reserve
+        self.maximum = maximum
 
     def discard(self, instances):
         """Discard instances.
@@ -80,6 +84,8 @@ class Cache(object):
             # entries there, then do the blocking API calls, then return
             # everything.
             existing = set(self._get_set('pool/' + self.name))
+            if self.maximum and (len(existing) + count) > self.maximum:
+                raise ValueError('Instance limit exceeded.')
             allocated = set(self._get_set('allocated/' + self.name))
             cached = list(existing - allocated)[:count]
             count = count - len(cached)
@@ -113,7 +119,10 @@ class Cache(object):
             existing_instances = self.store[setname]
         except KeyError:
             existing_instances = ''
-        return existing_instances.split(',')
+        if existing_instances:
+            return existing_instances.split(',')
+        else:
+            return []
 
     def _set_remove(self, setname, items):
         """Remove items from a stored list.

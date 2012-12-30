@@ -26,9 +26,11 @@ class TestCache(TestCase):
 
     def test_construct(self):
         # Cache objects need a name, a provision callback, a discard callback
-        # a store, an optional reserve watermark.
+        # a store, an optional reserve watermark, an optional maximum
+        # watermark.
         c = cache.Cache("foo", None, None, None)
         c = cache.Cache("foo", None, None, None, reserve=1)
+        c = cache.Cache("foo", None, None, None, maximum=1)
 
     def test_provision_single(self):
         provide = lambda count:[str(c) for c in range(count)]
@@ -88,6 +90,30 @@ class TestCache(TestCase):
             self.assertEqual('foo', c.store['resource/0'])
             self.assertEqual('foo', c.store['resource/1'])
             self.assertEqual('foo', c.store['resource/2'])
+
+    def test_provision_to_cap(self):
+        provide = lambda count:[str(c) for c in range(count)]
+        c = cache.Cache("foo", provide, None, memory.Store({}), maximum=2)
+        c.provision(2)
+
+    def test_provision_at_cap(self):
+        gen = iter(range(3))
+        def provide(count):
+            result = []
+            for _ in range(count):
+                result.append(str(gen.next()))
+            return result
+        c = cache.Cache("foo", provide, None, memory.Store({}), maximum=2)
+        c.provision(2)
+        self.assertThat(lambda: c.provision(1), raises(ValueError))
+        with read_locked(c.store):
+            self.assertEqual('0,1', c.store['pool/foo'])
+            self.assertThat(lambda:c.store['resource/2'], raises(KeyError))
+
+    def test_provision_beyond_cap(self):
+        provide = lambda count:[str(c) for c in range(count)]
+        c = cache.Cache("foo", provide, None, memory.Store({}), maximum=2)
+        self.assertThat(lambda: c.provision(3), raises(ValueError))
 
     def test_discard_single(self):
         provide = lambda count:[str(c) for c in range(count)]
