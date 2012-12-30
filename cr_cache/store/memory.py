@@ -17,8 +17,22 @@
 This store uses a simple in-memory dict for storing data.
 """
 
-from cr_cache.store import BaseStore
+from cr_cache.store import AbstractStore
 
 
-class Store(BaseStore):
-    pass
+class Store(AbstractStore):
+    
+    def __init__(self, backend):
+        self._backend = backend
+
+    def __getitem__(self, item):
+        return self._backend[item]
+
+    def __setitem__(self, item, value):
+        self._backend[item] = value
+
+    def __delitem__(self, item):
+        del self._backend[item]
+
+    def close():
+        pass

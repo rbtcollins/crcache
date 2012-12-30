@@ -19,5 +19,34 @@ local: The default local persistent DB.
 memory: An in-memory store for testing.
 """
 
-class BaseStore(object):
-    """Base class defining the contract for Store types."""
+class AbstractStore(object):
+    """class defining the contract for Store types.
+    
+    Stores are expected to immediately expose changes to other instances opened
+    in other processes.
+    """
+
+    def __getitem__(self, item):
+        """Return item from the store.
+
+        :param item: A string key to retrieve.
+        :return: A string value.
+        :raises KeyError: If the item is missing.
+        """
+        raise NotImplementedError(self.__getitem__)
+
+    def __setitem__(self, item, value):
+        """Set item into the store.
+
+        :param item: A string key to set.
+        :param value: A string value.
+        """
+        raise NotImplementedError(self.__setitem__)
+
+    def __delitem__(self, item):
+        """Delete item from the store.
+
+        :param item: A string key to delete.
+        :raises KeyError: If the item is missing.
+        """
+        raise NotImplementedError(self.__getitem__)

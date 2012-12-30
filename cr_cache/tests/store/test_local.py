@@ -14,9 +14,17 @@
 
 """Tests for the local store implementation."""
 
+import os.path
+
+from cr_cache.store import local
 from cr_cache.tests import TestCase
 
 
 class TestLocalStore(TestCase):
 
-    pass
+    def test_dbm_in_homedir(self):
+        self.assertFalse(
+            os.path.exists(os.path.expanduser('~/.cache/crcache/state.dbm')))
+        store = local.Store()
+        self.assertTrue(
+            os.path.exists(os.path.expanduser('~/.cache/crcache/state.dbm')))

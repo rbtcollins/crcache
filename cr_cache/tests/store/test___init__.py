@@ -14,14 +14,21 @@
 
 """Tests for the store contract and common facilities."""
 
+from functools import partial
+
+from testtools.matchers import raises
+
 from cr_cache.store import local, memory
 from cr_cache.tests import TestCase
 
+def memory_factory():
+    backend = {}
+    return partial(memory.Store, backend)
 
 # what implementations do we need to test?
 store_implementations = [
-    ('Local', {'store_factory': local.Store}),
-    ('Memory', {'store_factory': memory.Store}),
+    ('Local', {'store_factory_factory': lambda:local.Store}),
+    ('Memory', {'store_factory_factory': memory_factory}),
     ]
 
 
@@ -29,5 +36,32 @@ class TestStoreContract(TestCase):
 
     scenarios = store_implementations
 
-    def test_construct(self):
-        self.store_factory()
+    def make_store(self):
+        if not getattr(self, 'store_factory', None):
+            self.store_factory = self.store_factory_factory()
+        return self.store_factory()
+
+    def test_put(self):
+        s = self.make_store()
+        s['foo'] = 'bar'
+
+    def test_get(self):
+        s = self.make_store()
+        s2 = self.make_store()
+        s['foo'] = 'bar'
+        self.assertEqual('bar', s['foo'])
+        # The change is immediately visible to other store instances.
+        self.assertEqual('bar', s2['foo'])
+
+    def test_get_missing(self):
+        s = self.make_store()
+        self.assertThat(lambda:s['bar'], raises(KeyError))
+
+    def test_delete(self):
+        s = self.make_store()
+        s2 = self.make_store()
+        s['foo'] = 'bar'
+        del s['foo']
+        self.assertThat(lambda:s['foo'], raises(KeyError))
+        # The change is immediately visible to other store instances.
+        self.assertThat(lambda:s2['foo'], raises(KeyError))
