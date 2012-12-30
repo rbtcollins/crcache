@@ -65,7 +65,10 @@ class AbstractStore(object):
         raise NotImplementedError(self.lock_write)
 
     def unlock(self):
-        """unlock the store."""
+        """unlock the store.
+        
+        Note that locks need to be reentrant within a single thread.
+        """
         raise NotImplementedError(self.unlock)
 
 
