@@ -19,11 +19,16 @@ local: The default local persistent DB.
 memory: An in-memory store for testing.
 """
 
+from contextlib import contextmanager
+
+
 class AbstractStore(object):
     """class defining the contract for Store types.
     
     Stores are expected to immediately expose changes to other instances opened
     in other processes.
+
+    No operations can be done outside of a lock context.
     """
 
     def __getitem__(self, item):
@@ -50,3 +55,33 @@ class AbstractStore(object):
         :raises KeyError: If the item is missing.
         """
         raise NotImplementedError(self.__getitem__)
+
+    def lock_read(self):
+        """Lock the store, making it possible to read from it."""
+        raise NotImplementedError(self.lock_read)
+
+    def lock_write(self):
+        """Lock the store, making it possible to read or write to it."""
+        raise NotImplementedError(self.lock_write)
+
+    def unlock(self):
+        """unlock the store."""
+        raise NotImplementedError(self.unlock)
+
+
+@contextmanager
+def read_locked(store):
+    store.lock_read()
+    try:
+        yield store
+    finally:
+        store.unlock()
+
+
+@contextmanager
+def write_locked(store):
+    store.lock_write()
+    try:
+        yield store
+    finally:
+        store.unlock()

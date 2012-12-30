@@ -28,38 +28,51 @@ class Store(AbstractStore):
     """General store for most crcache operations.
 
     Stores data in ~/.cache/crcache/state.dbm.
-
-    Each operation opens-and-closes the file to avoid caches some dbm
-    implementations have internally.
+    Updates may be batched depending on the dbm implementation, with a lock
+    kept in state.lck.
     """
 
     def __init__(self):
         self.dbm_path = os.path.expanduser('~/.cache/crcache/state.dbm')
+        self.dbm_lock = os.path.expanduser('~/.cache/crcache/state.lck')
+        self._locked = False
         # Check it is usable, create empty db if needed.
         dir = os.path.dirname(self.dbm_path)
         if not os.path.exists(dir):
             os.makedirs(dir)
+        self._lock()
         db = dbm.open(self.dbm_path, 'c')
         db.close()
+        self._unlock()
 
     def __getitem__(self, item):
-        db = dbm.open(self.dbm_path, 'r')
-        try:
-            return db[item]
-        finally:
-            db.close()
+        return self._db[item]
 
     def __setitem__(self, item, value):
-        db = dbm.open(self.dbm_path, 'w')
-        try:
-            db[item] = value
-        finally:
-            db.close()
+        self._db[item] = value
 
     def __delitem__(self, item):
-        db = dbm.open(self.dbm_path, 'w')
-        try:
-            del db[item]
-        finally:
-            db.close()
+        del self._db[item]
 
+    def lock_read(self):
+        self._lock()
+        self._db = dbm.open(self.dbm_path, 'r')
+
+    def lock_write(self):
+        self._lock()
+        self._db = dbm.open(self.dbm_path, 'w')
+
+    def _lock(self):
+        fd = os.open(self.dbm_lock, os.O_CREAT | os.O_EXCL)
+        os.close(fd)
+        self._locked = True
+
+    def _unlock(self):
+        if not self._locked:
+            raise AssertionError('not locked')
+        os.unlink(self.dbm_lock)
+        self._locked = False
+
+    def unlock(self):
+        self._db.close()
+        self._unlock()

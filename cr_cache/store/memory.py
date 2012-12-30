@@ -24,15 +24,28 @@ class Store(AbstractStore):
     
     def __init__(self, backend):
         self._backend = backend
+        self._lock = 'u'
 
     def __getitem__(self, item):
+        if self._lock not in 'rw':
+            raise AssertionError('not locked')
         return self._backend[item]
 
     def __setitem__(self, item, value):
+        if self._lock not in 'w':
+            raise AssertionError('not locked')
         self._backend[item] = value
 
     def __delitem__(self, item):
+        if self._lock not in 'w':
+            raise AssertionError('not locked')
         del self._backend[item]
 
-    def close():
-        pass
+    def unlock(self):
+        self._lock = 'u'
+
+    def lock_read(self):
+        self._lock = 'r'
+
+    def lock_write(self):
+        self._lock = 'w'

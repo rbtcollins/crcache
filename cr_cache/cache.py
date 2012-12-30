@@ -14,6 +14,8 @@
 
 """Resource Cache for caching resources."""
 
+from cr_cache.store import write_locked
+
 class Cache(object):
     """Keep track of compute resources.
     
@@ -40,12 +42,13 @@ class Cache(object):
         :return: A list of instance ids.
         """
         instances = self._provision(count)
-        for instance in instances:
-            self.store['resource/' + instance] = self.name
-        try:
-            existing_instances = self.store['pool/' + self.name]
-            self.store['pool/' + self.name] = ','.join(
-                instances + [existing_instances])
-        except KeyError:
-            self.store['pool/' + self.name] = ','.join(instances)
-        return instances
+        with write_locked(self.store):
+            for instance in instances:
+                self.store['resource/' + instance] = self.name
+            try:
+                existing_instances = self.store['pool/' + self.name]
+                self.store['pool/' + self.name] = ','.join(
+                    instances + [existing_instances])
+            except KeyError:
+                self.store['pool/' + self.name] = ','.join(instances)
+            return instances

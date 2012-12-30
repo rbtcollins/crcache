@@ -18,7 +18,7 @@ from functools import partial
 
 from testtools.matchers import raises
 
-from cr_cache.store import local, memory
+from cr_cache.store import local, memory, read_locked, write_locked
 from cr_cache.tests import TestCase
 
 def memory_factory():
@@ -43,25 +43,66 @@ class TestStoreContract(TestCase):
 
     def test_put(self):
         s = self.make_store()
-        s['foo'] = 'bar'
+        with write_locked(s):
+            s['foo'] = 'bar'
 
     def test_get(self):
         s = self.make_store()
         s2 = self.make_store()
-        s['foo'] = 'bar'
-        self.assertEqual('bar', s['foo'])
+        with write_locked(s):
+            s['foo'] = 'bar'
+        with read_locked(s):
+            self.assertEqual('bar', s['foo'])
         # The change is immediately visible to other store instances.
-        self.assertEqual('bar', s2['foo'])
+        with read_locked(s2):
+            self.assertEqual('bar', s2['foo'])
 
     def test_get_missing(self):
         s = self.make_store()
-        self.assertThat(lambda:s['bar'], raises(KeyError))
+        with read_locked(s):
+            self.assertThat(lambda:s['bar'], raises(KeyError))
 
     def test_delete(self):
         s = self.make_store()
         s2 = self.make_store()
-        s['foo'] = 'bar'
-        del s['foo']
-        self.assertThat(lambda:s['foo'], raises(KeyError))
+        with write_locked(s):
+            s['foo'] = 'bar'
+        with write_locked(s):
+            del s['foo']
+        with read_locked(s):
+            self.assertThat(lambda:s['foo'], raises(KeyError))
         # The change is immediately visible to other store instances.
-        self.assertThat(lambda:s2['foo'], raises(KeyError))
+        with read_locked(s2):
+            self.assertThat(lambda:s2['foo'], raises(KeyError))
+
+    def test_lock_read_exist(self):
+        s = self.make_store()
+        s.lock_read()
+        s.unlock()
+
+    def test_lock_write_exist(self):
+        s = self.make_store()
+        s.lock_write()
+        s.unlock()
+
+    def test_unlock_exist(self):
+        s = self.make_store()
+        s.lock_read()
+        s.unlock()
+
+
+class TestDecorators(TestCase):
+
+    def test_read_locked(self):
+        s = memory.Store({})
+        self.assertEqual('u', s._lock)
+        with read_locked(s):
+            self.assertEqual('r', s._lock)
+        self.assertEqual('u', s._lock)
+
+    def test_write_locked(self):
+        s = memory.Store({})
+        self.assertEqual('u', s._lock)
+        with write_locked(s):
+            self.assertEqual('w', s._lock)
+        self.assertEqual('u', s._lock)
