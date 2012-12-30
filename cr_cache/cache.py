@@ -74,6 +74,14 @@ class Cache(object):
             self._set_remove('pool/' + self.name, to_discard)
         self._discard(to_discard)
 
+    def fill_reserve(self):
+        """If the cache is below the low watermark, fill it up."""
+        with write_locked(self.store):
+            existing = set(self._get_set('pool/' + self.name))
+            missing = self.reserve - len(existing)
+            if missing:
+                self._get_resources(missing)
+
     def provision(self, count):
         """Request count instances from the cache.
 
@@ -89,13 +97,21 @@ class Cache(object):
             allocated = set(self._get_set('allocated/' + self.name))
             cached = list(existing - allocated)[:count]
             count = count - len(cached)
-            new_instances = self._provision(count)
-            for instance in new_instances:
-                self.store['resource/' + instance] = self.name
-            self._update_set('pool/' + self.name, new_instances)
+            new_instances = self._get_resources(count)
             instances = new_instances + cached
             self._update_set('allocated/' + self.name, instances)
             return set(instances)
+
+    def _get_resources(self, count):
+        """Get some resources.
+
+        Assumes the store is already locked.
+        """
+        new_instances = self._provision(count)
+        for instance in new_instances:
+            self.store['resource/' + instance] = self.name
+        self._update_set('pool/' + self.name, new_instances)
+        return new_instances
 
     def _update_set(self, setname, items):
         """Add items to the list stored in setname.

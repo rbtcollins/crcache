@@ -32,6 +32,24 @@ class TestCache(TestCase):
         c = cache.Cache("foo", None, None, None, reserve=1)
         c = cache.Cache("foo", None, None, None, maximum=1)
 
+    def test_fill_reserve(self):
+        gen = iter(range(10))
+        def provide(count):
+            result = []
+            for _ in range(count):
+                result.append(str(gen.next()))
+            return result
+        c = cache.Cache("foo", provide, None, memory.Store({}), reserve=3)
+        c.provision(1)
+        c.fill_reserve()
+        # Check its all mapped correctly.
+        with read_locked(c.store):
+            self.assertEqual('0,1,2', c.store['pool/foo'])
+            self.assertEqual('0', c.store['allocated/foo'])
+            self.assertEqual('foo', c.store['resource/0'])
+            self.assertEqual('foo', c.store['resource/1'])
+            self.assertEqual('foo', c.store['resource/2'])
+
     def test_provision_single(self):
         provide = lambda count:[str(c) for c in range(count)]
         c = cache.Cache("foo", provide, None, memory.Store({}))
