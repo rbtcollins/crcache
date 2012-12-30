@@ -82,15 +82,15 @@ class Cache(object):
             return self.maximum - len(
                 set(self._get_set('allocated/' + self.name)))
 
-    def discard(self, instances):
+    def discard(self, instances, force=False):
         """Discard instances.
-
-        As long as the cache is above the reserved count, discards will be
-        passed to the discard routine immediately. Otherwise they will be
-        held indefinitely.
 
         :param instances: A list of string ids previously returned from a
             provision() call.
+        :param Force: When False (the default), as long as the cache is above
+            the reserved count, discards will be passed to the discard routine
+            immediately. Otherwise they will be held indefinitely. When True,
+            instances are never held in reserve.
         """
         instances = list(instances)
         prefix = self.name + '-'
@@ -103,7 +103,7 @@ class Cache(object):
             allocated = len(self._get_set('allocated/' + self.name))
             keep_count = self.reserve - allocated + len(instances)
             for pos, instance in enumerate(instances):
-                if pos >= keep_count:
+                if force or pos >= keep_count:
                     to_discard.append(instance)
             self._set_remove('allocated/' + self.name, instances)
         # XXX: Future - avoid long locks by having a gc queue and moving

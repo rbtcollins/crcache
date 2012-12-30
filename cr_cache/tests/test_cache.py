@@ -252,3 +252,17 @@ class TestCache(TestCase):
         c.discard(['foo-c1-0', 'foo-c2-3'])
         self.assertEqual(set(['c1-0']), c1.provision(1))
         self.assertEqual(set(['c2-3']), c2.provision(1))
+
+    def test_discard_force_ignores_reserve(self):
+        provide = lambda count:[str(c) for c in range(count)]
+        calls = []
+        discard = lambda instances:calls.append(instances)
+        c = cache.Cache("foo", memory.Store({}), provide, discard, reserve=1)
+        c.discard(c.provision(2), force=True)
+        self.assertEqual([['0', '1']], calls)
+        # The instance should have been unmapped in both directions from the
+        # store.
+        with read_locked(c.store):
+            self.assertEqual('', c.store['pool/foo'])
+            self.assertThat(lambda:c.store['resource/0'], raises(KeyError))
+            self.assertThat(lambda:c.store['resource/1'], raises(KeyError))
