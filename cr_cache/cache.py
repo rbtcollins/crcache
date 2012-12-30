@@ -75,13 +75,21 @@ class Cache(object):
 
         :return: A list of instance ids.
         """
-        instances = self._provision(count)
         with write_locked(self.store):
-            for instance in instances:
+            # XXX: Future, have a provisionally allocated set and move cached
+            # entries there, then do the blocking API calls, then return
+            # everything.
+            existing = set(self._get_set('pool/' + self.name))
+            allocated = set(self._get_set('allocated/' + self.name))
+            cached = list(existing - allocated)[:count]
+            count = count - len(cached)
+            new_instances = self._provision(count)
+            for instance in new_instances:
                 self.store['resource/' + instance] = self.name
-            self._update_set('pool/' + self.name, instances)
+            self._update_set('pool/' + self.name, new_instances)
+            instances = new_instances + cached
             self._update_set('allocated/' + self.name, instances)
-            return instances
+            return set(instances)
 
     def _update_set(self, setname, items):
         """Add items to the list stored in setname.
@@ -91,9 +99,9 @@ class Cache(object):
         """
         try:
             existing_instances = self.store[setname]
-            self.store[setname] = ','.join(items + [existing_instances])
+            self.store[setname] = ','.join(sorted(items + [existing_instances]))
         except KeyError:
-            self.store[setname] = ','.join(items)
+            self.store[setname] = ','.join(sorted(items))
 
     def _get_set(self, setname):
         """Get a serialised set from the store.

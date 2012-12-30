@@ -34,7 +34,7 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         c = cache.Cache("foo", provide, None, memory.Store({}))
         # One instance should be returned
-        self.assertEqual(['0'], c.provision(1))
+        self.assertEqual(set(['0']), c.provision(1))
         # The instance should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0', c.store['pool/foo'])
@@ -44,7 +44,7 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         c = cache.Cache("foo", provide, None, memory.Store({}))
         # Three instance should be returned
-        self.assertEqual(['0', '1', '2'], c.provision(3))
+        self.assertEqual(set(['0', '1', '2']), c.provision(3))
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0,1,2', c.store['pool/foo'])
@@ -60,15 +60,34 @@ class TestCache(TestCase):
                 result.append(str(gen.next()))
             return result
         c = cache.Cache("foo", provide, None, memory.Store({}))
-        self.assertEqual(['0', '1'], c.provision(2))
-        self.assertEqual(['2', '3'], c.provision(2))
+        self.assertEqual(set(['0', '1']), c.provision(2))
+        self.assertEqual(set(['2', '3']), c.provision(2))
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
-            self.assertEqual('2,3,0,1', c.store['pool/foo'])
+            self.assertEqual('0,1,2,3', c.store['pool/foo'])
             self.assertEqual('foo', c.store['resource/0'])
             self.assertEqual('foo', c.store['resource/1'])
             self.assertEqual('foo', c.store['resource/2'])
             self.assertEqual('foo', c.store['resource/3'])
+
+    def test_provision_pulls_from_reserve(self):
+        gen = iter(range(3))
+        def provide(count):
+            result = []
+            for _ in range(count):
+                result.append(str(gen.next()))
+            return result
+        discard = lambda instances:None
+        c = cache.Cache("foo", provide, discard, memory.Store({}), 2)
+        c.provision(2)
+        c.discard(['0', '1'])
+        self.assertEqual(set(['0', '1', '2']), c.provision(3))
+        # The instances should have been mapped in both directions in the store.
+        with read_locked(c.store):
+            self.assertEqual('0,1,2', c.store['pool/foo'])
+            self.assertEqual('foo', c.store['resource/0'])
+            self.assertEqual('foo', c.store['resource/1'])
+            self.assertEqual('foo', c.store['resource/2'])
 
     def test_discard_single(self):
         provide = lambda count:[str(c) for c in range(count)]
