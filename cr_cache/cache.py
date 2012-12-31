@@ -95,7 +95,8 @@ class Cache(object):
         instances = list(instances)
         prefix = self.name + '-'
         for instance in instances:
-            assert instance.startswith(prefix)
+            assert instance.startswith(prefix), \
+                "instance %r not owned by cache %r" % (instance, self.name)
         instances = [instance[len(prefix):] for instance in instances]
         # Lock first, to avoid races.
         to_discard = []

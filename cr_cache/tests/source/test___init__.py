@@ -20,8 +20,8 @@ from StringIO import StringIO
 from testtools.matchers import raises
 
 from cr_cache.cache import Cache
-from cr_cache.source import find_source_type, local, model
-from cr_cache.store.local import Store
+from cr_cache.source import find_source_type, local, model, pool
+from cr_cache.store.memory import Store
 from cr_cache.tests import TestCase
 
 # A list of implementations to test. 
@@ -36,6 +36,11 @@ source_implementations = []
 source_implementations.append(('model',
     {'source_factory': model.Source,
     'reference_config': """"""}))
+source_implementations.append(('pool',
+    {'source_factory': pool.Source,
+    'reference_config': """[DEFAULT]
+sources=a,b,c
+"""}))
 
 
 class TestConfigConstruction(TestCase):
