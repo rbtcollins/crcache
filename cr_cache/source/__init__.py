@@ -24,12 +24,33 @@ class AbstractSource(object):
     
     :attr config: The ConfigParser object containing the configuration of the
         source.
+    :attr get_source; The configured callback to obtain other sources.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, get_source):
         """Create an AbstractSource.
 
         :param config: A ConfigParser config containing the configuration for
             the source.
+        :param get_source: A callback to get a new source (used when sources
+            layer).
         """
         self.config = config
+        self.get_source = get_source
+        self._init()
+
+    def _init(self):
+        """Stub child classes can override for initialisation."""
+
+    def provision(self, count):
+        """Provision one or more instances."""
+        raise NotImplementedError(self.provision)
+
+    def discard(self, instances):
+        """Discard one or more instances."""
+        raise NotImplementedError(self.discard)
+
+
+def find_source_type(name):
+    modname = "cr_cache.source.%s" % name
+    return __import__(modname, globals(), locals(), ['Source']).Source

@@ -20,4 +20,4 @@ from cr_cache.tests import TestCase
 class TestModelSource(TestCase):
 
     def test_simple_construction(self):
-        model.Source(None)
+        model.Source(None, None)

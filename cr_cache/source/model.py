@@ -14,8 +14,18 @@
 
 """In-memory testing 'computing' resource."""
 
+from itertools import count, islice
+
 from cr_cache import source
 
 class Source(source.AbstractSource):
     """An in-memory testing source."""
 
+    def _init(self):
+        self._generator = count()
+
+    def provision(self, count):
+        return islice(self._generator, count)
+
+    def discard(self, instances):
+        return None
