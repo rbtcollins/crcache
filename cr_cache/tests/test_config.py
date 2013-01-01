@@ -16,7 +16,10 @@
 
 import os.path
 
+from testtools.matchers import Is, IsInstance
+
 from cr_cache import config
+from cr_cache.source import model
 from cr_cache.tests import TestCase
 
 class TestConfig(TestCase):
@@ -46,3 +49,22 @@ class TestConfig(TestCase):
         self.assertEqual({'foo': os.path.join(root1, 'sources', 'foo'), 
             'bar': os.path.join(root2, 'sources', 'bar')},
             config.source_dirs([root1, root2]))
+
+    def test_get_source_local_implicit(self):
+        # There is always a local source, even if its not configured
+        # explicitly.
+        c = config.Config()
+        s = c.get_source('local')
+        self.assertThat(c.get_source('local'), Is(s))
+
+    def test_get_source_local_explicit(self):
+        # Its possible to replace the definition of local.
+        homedir_config = os.path.join(self.homedir, '.config', 'crcache')
+        source_dir = os.path.join(homedir_config, 'sources', 'local')
+        os.makedirs(source_dir)
+        with open(os.path.join(source_dir, 'source.conf'), 'wt') as f:
+            f.write("[DEFAULT]\ntype=model\n")
+        c = config.Config()
+        s = c.get_source('local')
+        self.assertThat(s.source, IsInstance(model.Source))
+

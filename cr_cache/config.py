@@ -14,7 +14,12 @@
 
 """Configuration of cr_cache."""
 
+import ConfigParser
 import os.path
+
+from cr_cache import cache
+from cr_cache.source import find_source_type
+from cr_cache.store import local as local_store
 
 def default_path():
     """Return a list of directories to search for configuration data.
@@ -44,3 +49,36 @@ def source_dirs(roots):
                 continue
             result[name] = os.path.join(root, 'sources', name)
     return result
+
+
+class Config(object):
+    """Represents a full configuration of crcache.
+
+    This provides a cache of sources, allowing a recursive definition for
+    source loading.
+    """
+
+    def __init__(self):
+        self._source_dirs = source_dirs(default_path())
+        self._sources = {}
+        self._store = local_store.Store()
+
+    def get_source(self, name):
+        """Get a cr_cache.cache.Cache configured for the source called name.
+        
+        Results are cached in self._sources, and returned from there if present.
+        """
+        if name in self._sources:
+            return self._sources[name]
+        path = self._source_dirs.get(name)
+        if name == 'local' and path is None:
+            config = ConfigParser.ConfigParser()
+            source_type = find_source_type('local')
+        else:
+            config = ConfigParser.ConfigParser()
+            config.read(os.path.join(path, 'source.conf'))
+            source_type = find_source_type(config.get('DEFAULT', 'type'))
+        source = source_type(config, self.get_source)
+        result = cache.Cache(name, self._store, source)
+        self._sources[name] = result
+        return result

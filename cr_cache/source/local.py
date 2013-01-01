@@ -14,3 +14,13 @@
 
 """Locally defined and obtained computing resource."""
 
+from cr_cache import source
+
+class Source(source.AbstractSource):
+    """Provides a map onto the local machine.
+    
+    No special configuration.
+
+    Can only provide one resource.
+    """
+
