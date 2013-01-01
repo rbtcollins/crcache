@@ -47,35 +47,35 @@ class TestConfigConstruction(TestCase):
 
     scenarios = source_implementations
 
+    def make_source(self):
+        # Make a source from the parameters of the scenario.
+        child_sources = []
+        store = Store({})
+        backend = model.Source(None, None)
+        def get_source(name):
+            child_sources.append(name)
+            result = Cache(
+                name, store, backend.provision, discard=backend.discard)
+            return result
+        conf_file = StringIO(self.reference_config)
+        config = ConfigParser.ConfigParser()
+        config.readfp(conf_file)
+        return self.source_factory(config, get_source)
+
     def test_construct_signature(self):
         # Check that this source type will be constructable by the load
         # factory.
-        child_sources = []
-        def get_source(name):
-            child_sources.append(name)
-            result = Cache(
-                name, None, provision=lambda x:['a'], discard=lambda x:None)
-            return result
-        conf_file = StringIO(self.reference_config)
-        config = ConfigParser.ConfigParser()
-        config.readfp(conf_file)
-        self.source_factory(config, get_source)
+        self.make_source()
 
     def test_provision_discard(self):
-        # Check that this source type will be constructable by the load
-        # factory.
-        child_sources = []
-        def get_source(name):
-            child_sources.append(name)
-            result = Cache(
-                name, Store({}), provision=lambda x:['a'],
-                discard=lambda x:None)
-            return result
-        conf_file = StringIO(self.reference_config)
-        config = ConfigParser.ConfigParser()
-        config.readfp(conf_file)
-        source = self.source_factory(config, get_source)
+        source = self.make_source()
         source.discard(source.provision(2))
+
+    def test_has_children_attribute(self):
+        # To simplify the clients of Cache, all sources offer a children
+        # attribute.
+        source = self.make_source()
+        source.children
 
 
 class TestHelpers(TestCase):

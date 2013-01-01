@@ -24,7 +24,9 @@ class AbstractSource(object):
     
     :attr config: The ConfigParser object containing the configuration of the
         source.
-    :attr get_source; The configured callback to obtain other sources.
+    :attr get_source: The configured callback to obtain other sources.
+    :attr children: Cache child objects, used for status and introspection.
+        May only be read from, not mutated.
     """
 
     def __init__(self, config, get_source):
@@ -37,6 +39,7 @@ class AbstractSource(object):
         """
         self.config = config
         self.get_source = get_source
+        self.children = []
         self._init()
 
     def _init(self):
