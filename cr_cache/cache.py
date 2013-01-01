@@ -74,6 +74,13 @@ class Cache(object):
             return self.maximum - len(
                 set(self._get_set('allocated/' + self.name)))
 
+    def cached(self):
+        """How many instances are sitting in the reserve ready for use."""
+        with read_locked(self.store):
+            return len(
+                set(self._get_set('pool/' + self.name))) - len(
+                set(self._get_set('allocated/' + self.name)))
+
     def discard(self, instances, force=False):
         """Discard instances.
 
@@ -115,6 +122,11 @@ class Cache(object):
             missing = self.reserve - len(existing)
             if missing:
                 self._get_resources(missing)
+
+    def in_use(self):
+        """How many instances are checked out of this cache?"""
+        with read_locked(self.store):
+            return len(set(self._get_set('allocated/' + self.name)))
 
     def provision(self, count):
         """Request count instances from the cache.

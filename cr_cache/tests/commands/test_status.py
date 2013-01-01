@@ -15,6 +15,7 @@
 """Tests for the help command."""
 
 from cr_cache.commands import status
+from cr_cache.config import Config
 from cr_cache.ui.model import UI
 from cr_cache.tests import TestCase
 from cr_cache.tests.test_config import SourceConfigFixture
@@ -37,5 +38,19 @@ class TestCommand(TestCase):
                 ('source', 'cached', 'in-use', 'max'),
                 ('local', '0', '0', '1'),
                 ('model', '0', '0', '0'),
+                ]),
+            ], ui.outputs)
+
+    def test_shows_in_use(self):
+        ui, cmd = self.get_test_ui_and_cmd()
+        self.useFixture(SourceConfigFixture('model', 'model'))
+        source = Config().get_source('model')
+        self.addCleanup(source.discard, source.provision(1))
+        cmd.execute()
+        self.assertEqual(
+            [('table', [
+                ('source', 'cached', 'in-use', 'max'),
+                ('local', '0', '0', '1'),
+                ('model', '0', '1', '0'),
                 ]),
             ], ui.outputs)

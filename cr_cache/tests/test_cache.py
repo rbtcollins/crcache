@@ -68,6 +68,8 @@ class TestCache(TestCase):
         c = cache.Cache("foo", memory.Store({}), source, reserve=3)
         c.provision(1)
         c.fill_reserve()
+        self.assertEqual(1, c.in_use())
+        self.assertEqual(2, c.cached())
         # Check its all mapped correctly.
         with read_locked(c.store):
             self.assertEqual('0,1,2', c.store['pool/foo'])
@@ -79,8 +81,10 @@ class TestCache(TestCase):
     def test_provision_single(self):
         source = model.Source(None, None)
         c = cache.Cache("foo", memory.Store({}), source)
+        self.assertEqual(0, c.in_use())
         # One instance should be returned
         self.assertEqual(set(['foo-0']), c.provision(1))
+        self.assertEqual(1, c.in_use())
         # The instance should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0', c.store['pool/foo'])
@@ -91,6 +95,7 @@ class TestCache(TestCase):
         c = cache.Cache("foo", memory.Store({}), source)
         # Three instance should be returned
         self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
+        self.assertEqual(3, c.in_use())
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0,1,2', c.store['pool/foo'])
@@ -102,7 +107,9 @@ class TestCache(TestCase):
         source = model.Source(None, None)
         c = cache.Cache("foo", memory.Store({}), source)
         self.assertEqual(set(['foo-0', 'foo-1']), c.provision(2))
+        self.assertEqual(2, c.in_use())
         self.assertEqual(set(['foo-2', 'foo-3']), c.provision(2))
+        self.assertEqual(4, c.in_use())
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0,1,2,3', c.store['pool/foo'])
@@ -115,7 +122,11 @@ class TestCache(TestCase):
         source = model.Source(None, None)
         c = cache.Cache("foo", memory.Store({}), source, reserve=2)
         c.discard(c.provision(2))
+        self.assertEqual(0, c.in_use())
+        self.assertEqual(2, c.cached())
         self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
+        self.assertEqual(3, c.in_use())
+        self.assertEqual(0, c.cached())
         # The instances should have been mapped in both directions in the store.
         with read_locked(c.store):
             self.assertEqual('0,1,2', c.store['pool/foo'])
@@ -157,6 +168,8 @@ class TestCache(TestCase):
         c = cache.Cache("foo", memory.Store({}), source)
         c.provision(2)
         c.discard(['foo-0'])
+        self.assertEqual(1, c.in_use())
+        self.assertEqual(0, c.cached())
         # The instance should have been unmapped in both directions from the
         # store.
         with read_locked(c.store):
@@ -168,6 +181,8 @@ class TestCache(TestCase):
         c = cache.Cache("foo", memory.Store({}), source)
         c.provision(4)
         c.discard(['foo-0', 'foo-2'])
+        self.assertEqual(2, c.in_use())
+        self.assertEqual(0, c.cached())
         self.assertEqual(
             [('provision', 4), ('discard', ['0', '2'])], source._calls)
         # The instances should have been unmapped in both directions from the
@@ -181,6 +196,8 @@ class TestCache(TestCase):
         source = model.Source(None, None)
         c = cache.Cache("foo", memory.Store({}), source, reserve=1)
         c.discard(c.provision(2))
+        self.assertEqual(0, c.in_use())
+        self.assertEqual(1, c.cached())
         self.assertEqual(
             [('provision', 2), ('discard', ['1'])], source._calls)
         # The instance should have been unmapped in both directions from the
