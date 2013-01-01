@@ -12,15 +12,39 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""Tests for the crcache config system."""
+"""Tests and test support for the crcache config system."""
 
 import os.path
 
+from fixtures import Fixture
 from testtools.matchers import Is, IsInstance
 
 from cr_cache import config
 from cr_cache.source import model
 from cr_cache.tests import TestCase
+
+
+class SourceConfigFixture(Fixture):
+    """Sets up a source configuration."""
+
+    def __init__(self, name, type):
+        """Create a SourceConfigFixture.
+
+        :param name: The name for the source to configure.
+        :param type: The type to give the source.
+        """
+        super(SourceConfigFixture, self).__init__()
+        self._type = type
+        self._name = name
+
+    def setUp(self):
+        super(SourceConfigFixture, self).setUp()
+        homedir_config = os.path.join(os.environ['HOME'], '.config', 'crcache')
+        source_dir = os.path.join(homedir_config, 'sources', self._name)
+        os.makedirs(source_dir)
+        with open(os.path.join(source_dir, 'source.conf'), 'wt') as f:
+            f.write("[DEFAULT]\ntype=model\n")
+
 
 class TestConfig(TestCase):
 
@@ -59,11 +83,7 @@ class TestConfig(TestCase):
 
     def test_get_source_local_explicit(self):
         # Its possible to replace the definition of local.
-        homedir_config = os.path.join(self.homedir, '.config', 'crcache')
-        source_dir = os.path.join(homedir_config, 'sources', 'local')
-        os.makedirs(source_dir)
-        with open(os.path.join(source_dir, 'source.conf'), 'wt') as f:
-            f.write("[DEFAULT]\ntype=model\n")
+        self.useFixture(SourceConfigFixture('local', 'model'))
         c = config.Config()
         s = c.get_source('local')
         self.assertThat(s.source, IsInstance(model.Source))
