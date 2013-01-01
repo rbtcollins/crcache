@@ -27,7 +27,7 @@ from cr_cache.tests import TestCase
 class SourceConfigFixture(Fixture):
     """Sets up a source configuration."""
 
-    def __init__(self, name, type):
+    def __init__(self, name, type, reserve=None):
         """Create a SourceConfigFixture.
 
         :param name: The name for the source to configure.
@@ -36,6 +36,7 @@ class SourceConfigFixture(Fixture):
         super(SourceConfigFixture, self).__init__()
         self._type = type
         self._name = name
+        self._reserve = reserve
 
     def setUp(self):
         super(SourceConfigFixture, self).setUp()
@@ -44,6 +45,8 @@ class SourceConfigFixture(Fixture):
         os.makedirs(source_dir)
         with open(os.path.join(source_dir, 'source.conf'), 'wt') as f:
             f.write("[DEFAULT]\ntype=model\n")
+            if self._reserve is not None:
+                f.write('reserve=%d\n' % self._reserve)
 
 
 class TestConfig(TestCase):
@@ -88,3 +91,13 @@ class TestConfig(TestCase):
         s = c.get_source('local')
         self.assertThat(s.source, IsInstance(model.Source))
 
+    def test_get_source_defaults(self):
+        c = config.Config()
+        s = c.get_source('local')
+        self.assertEqual(0, s.reserve)
+
+    def test_get_source_reserve_in_ini_passed_to_cache(self):
+        self.useFixture(SourceConfigFixture('model', 'model', reserve=1))
+        c = config.Config()
+        s = c.get_source('model')
+        self.assertEqual(1, s.reserve)

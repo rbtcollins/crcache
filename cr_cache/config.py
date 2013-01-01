@@ -79,6 +79,10 @@ class Config(object):
             config.read(os.path.join(path, 'source.conf'))
             source_type = find_source_type(config.get('DEFAULT', 'type'))
         source = source_type(config, self.get_source)
-        result = cache.Cache(name, self._store, source)
+        kwargs = {}
+        if config.has_option('DEFAULT', 'reserve'):
+            reserve = int(config.get('DEFAULT', 'reserve'))
+            kwargs['reserve'] = reserve
+        result = cache.Cache(name, self._store, source, **kwargs)
         self._sources[name] = result
         return result

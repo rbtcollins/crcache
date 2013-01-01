@@ -54,3 +54,17 @@ class TestCommand(TestCase):
                 ('model', '0', '1', '0'),
                 ]),
             ], ui.outputs)
+
+    def test_shows_cached(self):
+        ui, cmd = self.get_test_ui_and_cmd()
+        self.useFixture(SourceConfigFixture('model', 'model', reserve=1))
+        source = Config().get_source('model')
+        source.fill_reserve()
+        cmd.execute()
+        self.assertEqual(
+            [('table', [
+                ('source', 'cached', 'in-use', 'max'),
+                ('local', '0', '0', '1'),
+                ('model', '1', '0', '0'),
+                ]),
+            ], ui.outputs)

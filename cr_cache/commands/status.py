@@ -28,7 +28,8 @@ class status(Command):
             sources.add('local')
         for source_name in sorted(sources):
             source = conf.get_source(source_name)
+            cached = str(source.cached())
             in_use = str(source.in_use())
-            table.append((source.name, '0', in_use, str(source.maximum)))
+            table.append((source.name, cached, in_use, str(source.maximum)))
         self.ui.output_table(table)
         return 0
