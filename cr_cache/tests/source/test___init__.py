@@ -54,8 +54,7 @@ class TestConfigConstruction(TestCase):
         backend = model.Source(None, None)
         def get_source(name):
             child_sources.append(name)
-            result = Cache(
-                name, store, backend, backend.provision, discard=backend.discard)
+            result = Cache(name, store, backend)
             return result
         conf_file = StringIO(self.reference_config)
         config = ConfigParser.ConfigParser()

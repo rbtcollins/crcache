@@ -23,9 +23,12 @@ class Source(source.AbstractSource):
 
     def _init(self):
         self._generator = count()
+        self._calls = []
 
     def provision(self, count):
+        self._calls.append(('provision', count))
         return [str(x) for x in islice(self._generator, count)]
 
     def discard(self, instances):
+        self._calls.append(('discard', instances))
         return None

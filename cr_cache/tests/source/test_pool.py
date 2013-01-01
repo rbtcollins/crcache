@@ -31,10 +31,8 @@ class TestPoolSource(TestCase):
         store = memory.Store({})
         backend = model.Source(None, None)
         sources = {}
-        sources['a'] = cache.Cache(
-            'a', store, backend, backend.provision, lambda x:None, reserve=1)
-        sources['b'] = cache.Cache(
-            'b', store, backend, backend.provision, lambda x:None, reserve=1)
+        sources['a'] = cache.Cache('a', store, backend, reserve=1)
+        sources['b'] = cache.Cache('b', store, backend, reserve=1)
         sources['a'].fill_reserve()
         sources['b'].fill_reserve()
         source = pool.Source(config, sources.__getitem__)
