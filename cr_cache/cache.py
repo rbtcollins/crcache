@@ -16,9 +16,6 @@
 
 from cr_cache.store import write_locked, read_locked
 
-# Note: structure in this file is a little messy, but contained. Refactoring
-# recommended once the UI exercising all the use cases is in place.
-
 class Cache(object):
     """Keep track of compute resources.
     
@@ -35,11 +32,10 @@ class Cache(object):
     :attr reserve: The low water policy point for the cache.
     :attr maximum: The high water policy point for the cache.
         This is never higher than the sum of the high water policies of any
-        child caches.
+        child caches (found via source.children).
     """
 
-    def __init__(self, name, store, source=None, provision=None, discard=None,
-        children=(), reserve=0, maximum=0):
+    def __init__(self, name, store, source, reserve=0, maximum=0):
         """Create a Cache.
 
         :param name: The name of the cache, used in storing the cache state.
@@ -48,13 +44,6 @@ class Cache(object):
             requests for resources when the cache is empty, to discard
             resources that are no longer needed, and to provide introspection
             of the tree structure of layered sources.
-        :param provision: Optional callback to obtain one or more instances.
-            [Deprecated]
-        :param discard: Optional callback to discard one or more instances.
-            [Deprecated]
-        :param children: Optional list of child caches. A cache may either
-            have provision + discard callbacks, or child caches, but not both.
-            [Deprecated]
         :param reserve: If non-zero, only discard instances returned to the
             cache via discard, if the total provisioned-but-not-discarded would
             be above the reserve.
@@ -62,24 +51,12 @@ class Cache(object):
             provisioned-but-not-discarded would exceed maximum.
         """
         self.name = name
-        if source is not None:
-            if provision is None:
-                provision = source.provision
-            if discard is None:
-                discard = source.discard
-        self._discard = discard
-        self._provision = provision
         self.store = store
         self.source = source
         self.reserve = reserve
         self.maximum = maximum
-        self.children = children
-        if ((self.children and (discard or provision)) or
-            (not self.children and (not discard or not provision))):
-                raise ValueError(
-                    "Must supply either children or callbacks, not both")
-        if self.children:
-            child_maximums = map(lambda x:x.maximum, self.children)
+        if self.source.children:
+            child_maximums = map(lambda x:x.maximum, self.source.children)
             if 0 not in child_maximums:
                 self.maximum = min(sum(child_maximums), self.maximum)
 
@@ -127,18 +104,7 @@ class Cache(object):
             self._set_remove('pool/' + self.name, to_discard)
         if not to_discard:
             return
-        if self.children:
-            discard_map = {}
-            for instance in to_discard:
-                name, _ = instance.split('-', 1)
-                discard_map.setdefault(name, []).append(instance)
-            for child in self.children:
-                if child.name in discard_map:
-                    child.discard(discard_map[child.name])
-            # Note that discards for no longer configured children are
-            # currently silently discarded.
-        else:
-            self._discard(to_discard)
+        self.source.discard(to_discard)
 
     def fill_reserve(self):
         """If the cache is below the low watermark, fill it up."""
@@ -190,36 +156,13 @@ class Cache(object):
 
         Assumes the store is already locked.
         """
-        # XXX: perhaps want a strategy object, hoist the complexity sideways?
-        cached_instances = []
-        # Gather cached resources first.
-        for child in self.children:
-            cached_instances.extend(
-                child.provision_from_cache(count-len(cached_instances)))
-        # Stash the grabbed instances, before doing calls that could block.
-        if cached_instances:
-            for instance in cached_instances:
-                self.store['resource/' + instance] = self.name
-            self._update_set('pool/' + self.name, cached_instances)
-        count -= len(cached_instances)
-        if self.children:
-            new_instances = []
-            for child in self.children:
-                if child.maximum:
-                    request_count = min(child.available(), count)
-                else:
-                    request_count = count
-                child_instances = child.provision(request_count)
-                for instance in child_instances:
-                    self.store['resource/' + instance] = self.name
-                self._update_set('pool/' + self.name, child_instances)
-                new_instances.extend(child_instances)
-        else:
-            new_instances = self._provision(count)
-            for instance in new_instances:
-                self.store['resource/' + instance] = self.name
-            self._update_set('pool/' + self.name, new_instances)
-        return cached_instances + new_instances
+        # note that this may leak (allocated in a child, not owned by this) if
+        # a source fails.
+        new_instances = self.source.provision(count)
+        for instance in new_instances:
+            self.store['resource/' + instance] = self.name
+        self._update_set('pool/' + self.name, new_instances)
+        return new_instances
 
     def _update_set(self, setname, items):
         """Add items to the list stored in setname.

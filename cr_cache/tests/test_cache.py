@@ -14,12 +14,13 @@
 
 """Tests for the crcache resource cache."""
 
+import ConfigParser
 import os.path
 
 from testtools.matchers import raises
 
 from cr_cache import cache
-from cr_cache.source import model
+from cr_cache.source import model, pool
 from cr_cache.store import memory, read_locked
 from cr_cache.tests import TestCase
 
@@ -29,38 +30,26 @@ class TestCache(TestCase):
         # Cache objects need a name, store, source.
         source = model.Source(None, None)
         store = memory.Store({})
-        c = cache.Cache("foo", store, source, reserve=2, maximum=4)
+        c = cache.Cache("foo", store, source)
         # They have optional reserve and maximum watermarks.
-        c = cache.Cache(
-            "foo", None, provision=lambda x:[], discard=lambda x:None,
-            reserve=2, maximum=4)
-        # Missing provision or discard callbacks implies a need for children.
-        # Neither
-        self.assertThat(lambda:cache.Cache("bar", None, children=[]),
-            raises(ValueError))
-        # Missing discard
-        self.assertThat(
-            lambda:cache.Cache("bar", None, provision=lambda x:[], children=[]),
-            raises(ValueError))
-        # Missing provision
-        self.assertThat(
-            lambda:cache.Cache("bar", None, discard=lambda x:None, children=[]),
-            raises(ValueError))
-        # provision + discard + children
-        self.assertThat(
-            lambda:cache.Cache("bar", None, provision=lambda x:[],
-            discard=lambda x:None, children=[c]), raises(ValueError))
-        cache.Cache("bar", None, children=[c])
-        cache.Cache("bar", None, reserve=1, children=[c])
-        cache.Cache("foo", None, maximum=1, children=[c])
+        c = cache.Cache("foo", store, source, reserve=2, maximum=4)
+        # Which can be supplied separately.
+        c = cache.Cache("foo", store, source, reserve=2)
+        c = cache.Cache("foo", store, source, maximum=4)
+        # If a source has children, then
+        c = cache.Cache("c", store, source, reserve=2, maximum=4)
+        config = ConfigParser.ConfigParser()
+        config.set("DEFAULT", "sources", "c")
+        children = {'c': c}
+        p = pool.Source(config, children.__getitem__)
         # maximum is clamped to sum() child maximums.
-        self.assertEqual(4,
-            cache.Cache("bar", None, maximum=10, children=[c]).maximum)
+        self.assertEqual(4, cache.Cache("bar", store, p, maximum=10).maximum)
         # Except when any child is unlimited
-        c2 = cache.Cache(
-            "foo", None, provision=lambda x:[], discard=lambda x:None)
-        self.assertEqual(10,
-            cache.Cache("bar", None, maximum=10, children=[c, c2]).maximum)
+        c2 = cache.Cache("c2", store, source)
+        children['c2'] = c2
+        config.set("DEFAULT", "sources", "c,c2")
+        p = pool.Source(config, children.__getitem__)
+        self.assertEqual(10, cache.Cache("bar", store, p, maximum=10).maximum)
 
     def test_fill_reserve(self):
         source = model.Source(None, None)
@@ -122,18 +111,6 @@ class TestCache(TestCase):
             self.assertEqual('foo', c.store['resource/1'])
             self.assertEqual('foo', c.store['resource/2'])
 
-    def test_provision_prefers_child_cached_instances(self):
-        store = memory.Store({})
-        source = model.Source(None, None)
-        c1 = cache.Cache("c1", store, source, reserve=2)
-        c2 = cache.Cache("c2", store, source, reserve=2)
-        c1.fill_reserve()
-        c2.fill_reserve()
-        c = cache.Cache("foo", store, children=[c1, c2])
-        self.assertEqual(
-            set(['foo-c1-0', 'foo-c1-1', 'foo-c2-2', 'foo-c2-3']),
-            c.provision(4))
-
     def test_provision_to_cap(self):
         source = model.Source(None, None)
         c = cache.Cache("foo", memory.Store({}), source, maximum=2)
@@ -158,18 +135,14 @@ class TestCache(TestCase):
         self.assertThat(lambda: c.provision(3), raises(ValueError))
 
     def test_provision_from_cache(self):
-        provide = lambda count:[str(c) for c in range(count)]
         source = model.Source(None, None)
-        c = cache.Cache(
-            "foo", memory.Store({}), source, provide, lambda x:None, reserve=2)
+        c = cache.Cache("foo", memory.Store({}), source, reserve=2)
         c.discard(c.provision(2))
         self.assertEqual(set(['foo-0', 'foo-1']), c.provision_from_cache(5))
 
     def test_discard_single(self):
-        provide = lambda count:[str(c) for c in range(count)]
-        discard = lambda instances:None
         source = model.Source(None, None)
-        c = cache.Cache("foo", memory.Store({}), source, provide, discard)
+        c = cache.Cache("foo", memory.Store({}), source)
         c.provision(2)
         c.discard(['foo-0'])
         # The instance should have been unmapped in both directions from the
@@ -206,34 +179,11 @@ class TestCache(TestCase):
             self.assertEqual('foo', c.store['resource/0'])
 
     def test_discard_increases_available(self):
-        provide = lambda count:[str(c) for c in range(count)]
-        discard = lambda instances:None
         source = model.Source(None, None)
-        c = cache.Cache(
-            "foo", memory.Store({}), source, provide, discard, reserve=1, maximum=4)
+        c = cache.Cache("foo", memory.Store({}), source, reserve=1, maximum=4)
         self.assertEqual(4, c.available())
         c.discard(c.provision(2))
         self.assertEqual(4, c.available())
-
-    def test_discard_returns_to_child_cache(self):
-        store = memory.Store({})
-        gen = iter(range(4))
-        def provide(count):
-            result = []
-            for _ in range(count):
-                result.append(str(gen.next()))
-            return result
-        source = model.Source(None, None)
-        c1 = cache.Cache(
-            "c1", store, source, provide, lambda x:None, reserve=1, maximum=2)
-        c2 = cache.Cache(
-            "c2", store, source, provide, lambda x:None, reserve=1, maximum=2)
-        c = cache.Cache("foo", store, children=[c1, c2])
-        c.provision(4)
-        c.discard(['foo-c1-1', 'foo-c2-2'])
-        c.discard(['foo-c1-0', 'foo-c2-3'])
-        self.assertEqual(set(['c1-0']), c1.provision(1))
-        self.assertEqual(set(['c2-3']), c2.provision(1))
 
     def test_discard_force_ignores_reserve(self):
         source = model.Source(None, None)
