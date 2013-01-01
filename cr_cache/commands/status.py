@@ -26,7 +26,8 @@ class status(Command):
         sources = config.sources(config.default_path())
         if 'local' not in sources:
             sources.add('local')
-        for source in sorted(sources):
-            table.append((source, '0', '0', '0'))
+        for source_name in sorted(sources):
+            source = conf.get_source(source_name)
+            table.append((source.name, '0', '0', str(source.maximum)))
         self.ui.output_table(table)
         return 0

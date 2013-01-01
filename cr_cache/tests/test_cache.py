@@ -20,7 +20,7 @@ import os.path
 from testtools.matchers import raises
 
 from cr_cache import cache
-from cr_cache.source import model, pool
+from cr_cache.source import local, model, pool
 from cr_cache.store import memory, read_locked
 from cr_cache.tests import TestCase
 
@@ -50,6 +50,18 @@ class TestCache(TestCase):
         config.set("DEFAULT", "sources", "c,c2")
         p = pool.Source(config, children.__getitem__)
         self.assertEqual(10, cache.Cache("bar", store, p, maximum=10).maximum)
+
+    def test_maximum_capped_by_source_maximum(self):
+        config = ConfigParser.ConfigParser()
+        source = local.Source(config, None)
+        store = memory.Store({})
+        # Unlimited case.
+        c = cache.Cache("foo", store, source)
+        self.assertEqual(1, c.maximum)
+        # Too-high a limit case.
+        c = cache.Cache("foo", store, source, maximum=2)
+        self.assertEqual(1, c.maximum)
+        # A lower limit wins though.
 
     def test_fill_reserve(self):
         source = model.Source(None, None)

@@ -20,7 +20,13 @@ from StringIO import StringIO
 from testtools.matchers import raises
 
 from cr_cache.cache import Cache
-from cr_cache.source import find_source_type, local, model, pool
+from cr_cache.source import (
+    find_source_type,
+    local,
+    model,
+    pool,
+    TooManyInstances,
+    )
 from cr_cache.store.memory import Store
 from cr_cache.tests import TestCase
 
@@ -35,12 +41,14 @@ from cr_cache.tests import TestCase
 source_implementations = []
 source_implementations.append(('model',
     {'source_factory': model.Source,
-    'reference_config': """"""}))
+    'reference_config': """""",
+    'test_maximum': 0}))
 source_implementations.append(('pool',
     {'source_factory': pool.Source,
     'reference_config': """[DEFAULT]
 sources=a,b,c
-"""}))
+""",
+    'test_maximum': 0}))
 
 
 class TestConfigConstruction(TestCase):
@@ -75,6 +83,22 @@ class TestConfigConstruction(TestCase):
         # attribute.
         source = self.make_source()
         source.children
+
+    def test_has_maximum_attribute(self):
+        # Sources may have a limit to the number of resources they can have
+        # provisioned at any one time.
+        source = self.make_source()
+        "%d" % source.maximum
+
+    def test_maximum_exceeded(self):
+        if not self.test_maximum:
+            self.skip("Cannot test maximum.")
+        source = self.make_source()
+        self.assertThat(lambda: source.provision(self.test_maximum + 1),
+            raises(TooManyInstances))
+        instances = source.provision(self.test_maximum)
+        self.addCleanup(source.discard, instances)
+        self.assertThat(lambda: source.provision(1), raises(TooManyInstances))
 
 
 class TestHelpers(TestCase):

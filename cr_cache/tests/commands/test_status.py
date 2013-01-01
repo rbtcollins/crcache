@@ -35,7 +35,7 @@ class TestCommand(TestCase):
         self.assertEqual(
             [('table', [
                 ('source', 'cached', 'in-use', 'max'),
-                ('local', '0', '0', '0'),
+                ('local', '0', '0', '1'),
                 ('model', '0', '0', '0'),
                 ]),
             ], ui.outputs)

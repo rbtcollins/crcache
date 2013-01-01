@@ -61,3 +61,14 @@ class TestPoolSource(TestCase):
         # two are kept in the reserve.
         self.assertEqual(set(['a-2']), sources['a'].provision(1))
         self.assertEqual(set(['b-1']), sources['b'].provision(1))
+
+    def test_sums_component_maximums(self):
+        config = ConfigParser.ConfigParser()
+        config.set('DEFAULT', 'sources', 'a,b')
+        store = memory.Store({})
+        backend = model.Source(None, None)
+        sources = {}
+        sources['a'] = cache.Cache('a', store, backend, maximum=1)
+        sources['b'] = cache.Cache('b', store, backend, maximum=2)
+        source = pool.Source(config, sources.__getitem__)
+        self.assertEqual(3, source.maximum)

@@ -32,7 +32,7 @@ class Cache(object):
     :attr reserve: The low water policy point for the cache.
     :attr maximum: The high water policy point for the cache.
         This is never higher than the sum of the high water policies of any
-        child caches (found via source.children).
+        child caches (found via source.maximum).
     """
 
     def __init__(self, name, store, source, reserve=0, maximum=0):
@@ -48,17 +48,19 @@ class Cache(object):
             cache via discard, if the total provisioned-but-not-discarded would
             be above the reserve.
         :param maximum: If non-zero, reject requests for resources if the total
-            provisioned-but-not-discarded would exceed maximum.
+            provisioned-but-not-discarded would exceed maximum. This is capped
+            by the maximum of the provided source.
         """
         self.name = name
         self.store = store
         self.source = source
         self.reserve = reserve
+        if self.source.maximum > 0:
+            if maximum > 0:
+                maximum = min(self.source.maximum, maximum)
+            else:
+                maximum = self.source.maximum
         self.maximum = maximum
-        if self.source.children:
-            child_maximums = map(lambda x:x.maximum, self.source.children)
-            if 0 not in child_maximums:
-                self.maximum = min(sum(child_maximums), self.maximum)
 
     def available(self):
         """Report on the number of resources that could be returned.

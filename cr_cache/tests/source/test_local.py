@@ -16,3 +16,10 @@
 
 from cr_cache.source import local
 from cr_cache.tests import TestCase
+
+class TestLocal(TestCase):
+
+    def test_maximum_1(self):
+        # The local source can only deliver one resource.
+        source = local.Source(None, None)
+        self.assertEqual(1, source.maximum)

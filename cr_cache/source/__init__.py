@@ -27,6 +27,8 @@ class AbstractSource(object):
     :attr get_source: The configured callback to obtain other sources.
     :attr children: Cache child objects, used for status and introspection.
         May only be read from, not mutated.
+    :attr maximum: Exported maximum instance count for this source. Defaults to
+        0 - unlimited.
     """
 
     def __init__(self, config, get_source):
@@ -40,13 +42,19 @@ class AbstractSource(object):
         self.config = config
         self.get_source = get_source
         self.children = []
+        self.maximum = 0
         self._init()
 
     def _init(self):
         """Stub child classes can override for initialisation."""
 
     def provision(self, count):
-        """Provision one or more instances."""
+        """Provision one or more instances.
+        
+        :raises TooManyInstances: if the call would exceed the source's maximum
+            available resource count. This should not be raised until
+            self.maximum instances have been issued.
+        """
         raise NotImplementedError(self.provision)
 
     def discard(self, instances):
@@ -57,3 +65,7 @@ class AbstractSource(object):
 def find_source_type(name):
     modname = "cr_cache.source.%s" % name
     return __import__(modname, globals(), locals(), ['Source']).Source
+
+
+class TooManyInstances(Exception):
+    """Too many instances have been pulled (or would be pulled)."""

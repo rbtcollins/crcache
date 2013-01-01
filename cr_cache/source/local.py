@@ -24,3 +24,5 @@ class Source(source.AbstractSource):
     Can only provide one resource.
     """
 
+    def _init(self):
+        self.maximum = 1
