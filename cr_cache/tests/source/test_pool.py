@@ -42,3 +42,22 @@ class TestPoolSource(TestCase):
         self.assertThat(set(resources), MatchesAny(
             Equals(set(['a-0', 'b-1', 'a-2'])),
             Equals(set(['a-0', 'b-1', 'b-2']))))
+
+    def test_discard_returns_to_child_cache(self):
+        config = ConfigParser.ConfigParser()
+        config.set('DEFAULT', 'sources', 'a,b')
+        store = memory.Store({})
+        backend = model.Source(None, None)
+        sources = {}
+        sources['a'] = cache.Cache('a', store, backend, reserve=1, maximum=2)
+        sources['b'] = cache.Cache('b', store, backend, reserve=1, maximum=2)
+        sources['a'].fill_reserve()
+        sources['b'].fill_reserve()
+        source = pool.Source(config, sources.__getitem__)
+        source.provision(4)
+        source.discard(['a-0', 'b-3'])
+        source.discard(['a-2', 'b-1'])
+        # The first returned entries get discarded (above reserve), the next
+        # two are kept in the reserve.
+        self.assertEqual(set(['a-2']), sources['a'].provision(1))
+        self.assertEqual(set(['b-1']), sources['b'].provision(1))
