@@ -38,16 +38,23 @@ class Cache(object):
         child caches.
     """
 
-    def __init__(self, name, store, provision=None, discard=None,
+    def __init__(self, name, store, source=None, provision=None, discard=None,
         children=(), reserve=0, maximum=0):
         """Create a Cache.
 
         :param name: The name of the cache, used in storing the cache state.
         :param store: A cr_cache.store for persisting the cache metadata.
+        :param source: A cr_cache.source.AbstractSource used to fulfill
+            requests for resources when the cache is empty, to discard
+            resources that are no longer needed, and to provide introspection
+            of the tree structure of layered sources.
         :param provision: Optional callback to obtain one or more instances.
+            [Deprecated]
         :param discard: Optional callback to discard one or more instances.
+            [Deprecated]
         :param children: Optional list of child caches. A cache may either
             have provision + discard callbacks, or child caches, but not both.
+            [Deprecated]
         :param reserve: If non-zero, only discard instances returned to the
             cache via discard, if the total provisioned-but-not-discarded would
             be above the reserve.
@@ -55,9 +62,15 @@ class Cache(object):
             provisioned-but-not-discarded would exceed maximum.
         """
         self.name = name
+        if source is not None:
+            if provision is None:
+                provision = source.provision
+            if discard is None:
+                discard = source.discard
         self._discard = discard
         self._provision = provision
         self.store = store
+        self.source = source
         self.reserve = reserve
         self.maximum = maximum
         self.children = children

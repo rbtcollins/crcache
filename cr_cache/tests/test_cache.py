@@ -19,15 +19,18 @@ import os.path
 from testtools.matchers import raises
 
 from cr_cache import cache
+from cr_cache.source import model
 from cr_cache.store import memory, read_locked
 from cr_cache.tests import TestCase
 
 class TestCache(TestCase):
 
     def test_construct(self):
-        # Cache objects need a name, an optional provision callback, an
-        # optional discard callback a store, an optional reserve watermark, an
-        # optional maximum watermark and optional child caches.
+        # Cache objects need a name, store, source.
+        source = model.Source(None, None)
+        store = memory.Store({})
+        c = cache.Cache("foo", store, source, reserve=2, maximum=4)
+        # They have optional reserve and maximum watermarks.
         c = cache.Cache(
             "foo", None, provision=lambda x:[], discard=lambda x:None,
             reserve=2, maximum=4)
@@ -66,8 +69,9 @@ class TestCache(TestCase):
             for _ in range(count):
                 result.append(str(gen.next()))
             return result
+        source = model.Source(None, None)
         c = cache.Cache(
-            "foo", memory.Store({}), provide, lambda x:None, reserve=3)
+            "foo", memory.Store({}), source, provide, lambda x:None, reserve=3)
         c.provision(1)
         c.fill_reserve()
         # Check its all mapped correctly.
@@ -80,7 +84,8 @@ class TestCache(TestCase):
 
     def test_provision_single(self):
         provide = lambda count:[str(c) for c in range(count)]
-        c = cache.Cache("foo", memory.Store({}), provide, lambda x:None)
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source, provide, lambda x:None)
         # One instance should be returned
         self.assertEqual(set(['foo-0']), c.provision(1))
         # The instance should have been mapped in both directions in the store.
@@ -90,7 +95,8 @@ class TestCache(TestCase):
 
     def test_provision_several(self):
         provide = lambda count:[str(c) for c in range(count)]
-        c = cache.Cache("foo", memory.Store({}), provide, lambda x:None)
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source, provide, lambda x:None)
         # Three instance should be returned
         self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
         # The instances should have been mapped in both directions in the store.
@@ -107,7 +113,8 @@ class TestCache(TestCase):
             for _ in range(count):
                 result.append(str(gen.next()))
             return result
-        c = cache.Cache("foo", memory.Store({}), provide, lambda x:None)
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source, provide, lambda x:None)
         self.assertEqual(set(['foo-0', 'foo-1']), c.provision(2))
         self.assertEqual(set(['foo-2', 'foo-3']), c.provision(2))
         # The instances should have been mapped in both directions in the store.
@@ -126,7 +133,8 @@ class TestCache(TestCase):
                 result.append(str(gen.next()))
             return result
         discard = lambda instances:None
-        c = cache.Cache("foo", memory.Store({}), provide, discard, reserve=2)
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source, provide, discard, reserve=2)
         c.discard(c.provision(2))
         self.assertEqual(set(['foo-0', 'foo-1', 'foo-2']), c.provision(3))
         # The instances should have been mapped in both directions in the store.
@@ -139,8 +147,9 @@ class TestCache(TestCase):
     def test_provision_prefers_child_cached_instances(self):
         store = memory.Store({})
         provide = lambda count:[str(c) for c in range(count)]
-        c1 = cache.Cache("c1", store, provide, lambda x:None, reserve=2)
-        c2 = cache.Cache("c2", store, provide, lambda x:None, reserve=2)
+        source = model.Source(None, None)
+        c1 = cache.Cache("c1", store, source, provide, lambda x:None, reserve=2)
+        c2 = cache.Cache("c2", store, source, provide, lambda x:None, reserve=2)
         c1.fill_reserve()
         c2.fill_reserve()
         c = cache.Cache("foo", store, children=[c1, c2])
@@ -150,8 +159,9 @@ class TestCache(TestCase):
 
     def test_provision_to_cap(self):
         provide = lambda count:[str(c) for c in range(count)]
+        source = model.Source(None, None)
         c = cache.Cache(
-            "foo", memory.Store({}), provide, lambda x:None, maximum=2)
+            "foo", memory.Store({}), source, provide, lambda x:None, maximum=2)
         self.assertEqual(2, c.available())
         c.provision(2)
         self.assertEqual(0, c.available())
@@ -163,8 +173,9 @@ class TestCache(TestCase):
             for _ in range(count):
                 result.append(str(gen.next()))
             return result
+        source = model.Source(None, None)
         c = cache.Cache(
-            "foo", memory.Store({}), provide, lambda x:None, maximum=2)
+            "foo", memory.Store({}), source, provide, lambda x:None, maximum=2)
         c.provision(2)
         self.assertThat(lambda: c.provision(1), raises(ValueError))
         with read_locked(c.store):
@@ -173,21 +184,24 @@ class TestCache(TestCase):
 
     def test_provision_beyond_cap(self):
         provide = lambda count:[str(c) for c in range(count)]
+        source = model.Source(None, None)
         c = cache.Cache(
-            "foo", memory.Store({}), provide, lambda x:None, maximum=2)
+            "foo", memory.Store({}), source, provide, lambda x:None, maximum=2)
         self.assertThat(lambda: c.provision(3), raises(ValueError))
 
     def test_provision_from_cache(self):
         provide = lambda count:[str(c) for c in range(count)]
+        source = model.Source(None, None)
         c = cache.Cache(
-            "foo", memory.Store({}), provide, lambda x:None, reserve=2)
+            "foo", memory.Store({}), source, provide, lambda x:None, reserve=2)
         c.discard(c.provision(2))
         self.assertEqual(set(['foo-0', 'foo-1']), c.provision_from_cache(5))
 
     def test_discard_single(self):
         provide = lambda count:[str(c) for c in range(count)]
         discard = lambda instances:None
-        c = cache.Cache("foo", memory.Store({}), provide, discard)
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source, provide, discard)
         c.provision(2)
         c.discard(['foo-0'])
         # The instance should have been unmapped in both directions from the
@@ -200,7 +214,8 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         calls = []
         discard = lambda instances:calls.append(instances)
-        c = cache.Cache("foo", memory.Store({}), provide, discard)
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source, provide, discard)
         c.provision(4)
         c.discard(['foo-0', 'foo-2'])
         self.assertEqual([['0', '2']], calls)
@@ -215,7 +230,8 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         calls = []
         discard = lambda instances:calls.append(instances)
-        c = cache.Cache("foo", memory.Store({}), provide, discard, reserve=1)
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source, provide, discard, reserve=1)
         c.discard(c.provision(2))
         self.assertEqual([['1']], calls)
         # The instance should have been unmapped in both directions from the
@@ -228,8 +244,9 @@ class TestCache(TestCase):
     def test_discard_increases_available(self):
         provide = lambda count:[str(c) for c in range(count)]
         discard = lambda instances:None
+        source = model.Source(None, None)
         c = cache.Cache(
-            "foo", memory.Store({}), provide, discard, reserve=1, maximum=4)
+            "foo", memory.Store({}), source, provide, discard, reserve=1, maximum=4)
         self.assertEqual(4, c.available())
         c.discard(c.provision(2))
         self.assertEqual(4, c.available())
@@ -242,10 +259,11 @@ class TestCache(TestCase):
             for _ in range(count):
                 result.append(str(gen.next()))
             return result
+        source = model.Source(None, None)
         c1 = cache.Cache(
-            "c1", store, provide, lambda x:None, reserve=1, maximum=2)
+            "c1", store, source, provide, lambda x:None, reserve=1, maximum=2)
         c2 = cache.Cache(
-            "c2", store, provide, lambda x:None, reserve=1, maximum=2)
+            "c2", store, source, provide, lambda x:None, reserve=1, maximum=2)
         c = cache.Cache("foo", store, children=[c1, c2])
         c.provision(4)
         c.discard(['foo-c1-1', 'foo-c2-2'])
@@ -257,7 +275,8 @@ class TestCache(TestCase):
         provide = lambda count:[str(c) for c in range(count)]
         calls = []
         discard = lambda instances:calls.append(instances)
-        c = cache.Cache("foo", memory.Store({}), provide, discard, reserve=1)
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source, provide, discard, reserve=1)
         c.discard(c.provision(2), force=True)
         self.assertEqual([['0', '1']], calls)
         # The instance should have been unmapped in both directions from the
