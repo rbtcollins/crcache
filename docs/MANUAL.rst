@@ -141,7 +141,7 @@ acquire
 
 Checks a compute resource out for use::
 
-    $ crcache -p pool acquire
+    $ crcache -s pool acquire
     pool0
 
     $ crcache status pool

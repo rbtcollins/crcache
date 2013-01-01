@@ -22,6 +22,7 @@ def test_suite():
         '__init__',
         'command',
         'doubledash',
+        'number',
         'string',
     ]
     test_names = ['cr_cache.tests.arguments.test_' + name for name in test_mods]

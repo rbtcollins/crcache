@@ -12,19 +12,21 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""Tests for crcache.commands."""
+"""Tests for the number argument types."""
 
-import unittest
+from testtools.matchers import raises
 
-def test_suite():
-    """Test suite thunk, manually defined for Python 2.6."""
-    test_mods = [
-        '__init__',
-        'acquire',
-        'help',
-        'quickstart',
-        'status',
-    ]
-    test_names = ['cr_cache.tests.commands.test_' + name for name in test_mods]
-    loader = unittest.TestLoader()
-    return loader.loadTestsFromNames(test_names)
+from cr_cache.arguments import number
+from cr_cache.tests import TestCase
+
+
+class TestArgument(TestCase):
+
+    def test_parses_as_int(self):
+        arg = number.IntegerArgument('name')
+        result = arg.parse(['1'])
+        self.assertEqual([1], result)
+
+    def test_rejects_non_int(self):
+        arg = number.IntegerArgument('name')
+        self.assertThat(lambda: arg.parse(['1.0']), raises(ValueError))

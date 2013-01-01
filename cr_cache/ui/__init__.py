@@ -112,7 +112,7 @@ class AbstractUI(object):
         :param stream: A file like object that can be read from. The UI will
         not close the file.
         """
-        raise NotImplementedError(self.output_results)
+        raise NotImplementedError(self.output_stream)
 
     def output_table(self, table):
         """Show a table to the user.

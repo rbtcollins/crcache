@@ -12,19 +12,13 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""Tests for crcache.commands."""
+"""An Argument that grabs a number."""
 
-import unittest
+from cr_cache.arguments import AbstractArgument
 
-def test_suite():
-    """Test suite thunk, manually defined for Python 2.6."""
-    test_mods = [
-        '__init__',
-        'acquire',
-        'help',
-        'quickstart',
-        'status',
-    ]
-    test_names = ['cr_cache.tests.commands.test_' + name for name in test_mods]
-    loader = unittest.TestLoader()
-    return loader.loadTestsFromNames(test_names)
+
+class IntegerArgument(AbstractArgument):
+    """An argument that captures integers."""
+
+    def _parse_one(self, arg):
+        return int(arg)

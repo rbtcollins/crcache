@@ -12,7 +12,7 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""Tests for the help command."""
+"""Tests for the status command."""
 
 from cr_cache.commands import status
 from cr_cache.config import Config
