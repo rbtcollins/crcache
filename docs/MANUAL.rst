@@ -142,7 +142,7 @@ acquire
 Checks a compute resource out for use::
 
     $ crcache -s pool acquire
-    pool0
+    pool-0
 
     $ crcache status pool
     source  cached  in-use max
@@ -153,7 +153,7 @@ run
 
 Runs a command on a checked out resource::
 
-    $ crcache run pool0 echo foo
+    $ crcache run -s pool-0 echo foo
     foo
 
 copy
@@ -161,7 +161,7 @@ copy
 
 Copies files into (or out of) the resource::
 
-    $ crcache cp pool0:foo bar
+    $ crcache cp pool-0:foo bar
 
 release
 -------

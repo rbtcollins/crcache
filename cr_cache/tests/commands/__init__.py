@@ -24,6 +24,7 @@ def test_suite():
         'help',
         'quickstart',
         'release',
+        'run',
         'status',
     ]
     test_names = ['cr_cache.tests.commands.test_' + name for name in test_mods]

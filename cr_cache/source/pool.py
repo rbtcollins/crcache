@@ -44,6 +44,8 @@ class Source(source.AbstractSource):
         count -= len(cached_instances)
         new_instances = []
         for child in self.children:
+            if not count:
+                break
             if child.maximum:
                 request_count = min(child.available(), count)
             else:

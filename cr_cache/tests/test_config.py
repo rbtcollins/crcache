@@ -27,16 +27,19 @@ from cr_cache.tests import TestCase
 class SourceConfigFixture(Fixture):
     """Sets up a source configuration."""
 
-    def __init__(self, name, type, reserve=None):
+    def __init__(self, name, type, reserve=None, sources=None):
         """Create a SourceConfigFixture.
 
         :param name: The name for the source to configure.
         :param type: The type to give the source.
+        :param reserve: Configure a reserve.
+        :param sources: Configure sources.
         """
         super(SourceConfigFixture, self).__init__()
         self._type = type
         self._name = name
         self._reserve = reserve
+        self._sources = sources
 
     def setUp(self):
         super(SourceConfigFixture, self).setUp()
@@ -46,7 +49,9 @@ class SourceConfigFixture(Fixture):
         with open(os.path.join(source_dir, 'source.conf'), 'wt') as f:
             f.write("[DEFAULT]\ntype=model\n")
             if self._reserve is not None:
-                f.write('reserve=%d\n' % self._reserve)
+                f.write('reserve=%s\n' % self._reserve)
+            if self._sources is not None:
+                f.write('sources=%s\n' % self._sources)
 
 
 class TestConfig(TestCase):
