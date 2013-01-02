@@ -51,9 +51,14 @@ source_implementations.append(('pool',
 sources=a,b,c
 """,
     'test_maximum': 0}))
+source_implementations.append(('local',
+    {'source_factory': local.Source,
+    'reference_config': """[DEFAULT]
+""",
+    'test_maximum': 1}))
 
 
-class TestConfigConstruction(TestCase):
+class TestSourceInterface(TestCase):
 
     scenarios = source_implementations
 
@@ -78,7 +83,10 @@ class TestConfigConstruction(TestCase):
 
     def test_provision_discard(self):
         source = self.make_source()
-        source.discard(source.provision(2))
+        count = 2
+        if self.test_maximum and self.test_maximum < count:
+            count = self.test_maximum
+        source.discard(source.provision(count))
 
     def test_has_children_attribute(self):
         # To simplify the clients of Cache, all sources offer a children
@@ -98,9 +106,11 @@ class TestConfigConstruction(TestCase):
         source = self.make_source()
         self.assertThat(lambda: source.provision(self.test_maximum + 1),
             raises(TooManyInstances))
-        instances = source.provision(self.test_maximum)
-        self.addCleanup(source.discard, instances)
-        self.assertThat(lambda: source.provision(1), raises(TooManyInstances))
+        source.discard(source.provision(self.test_maximum))
+        # It might be tempting to allocate maximum here then try for one
+        # more and expect that to fail, but that assigns too much
+        # responsibility for tracking to sources: sources know how to
+        # make, run and delete, not track usage - caches do that.
 
     def test_run(self):
         source = self.make_source()

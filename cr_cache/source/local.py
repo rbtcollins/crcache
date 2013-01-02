@@ -31,6 +31,14 @@ class Source(source.AbstractSource):
     def _init(self):
         self.maximum = 1
 
+    def discard(self, resources):
+        pass
+
+    def provision(self, count):
+        if count > 1:
+            raise source.TooManyInstances()
+        return ['local'] * count
+
     def _clear_SIGPIPE(self):
         """Clear SIGPIPE : child processes expect the default handler."""
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
