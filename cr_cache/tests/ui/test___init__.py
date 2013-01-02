@@ -16,7 +16,6 @@
 
 from cStringIO import StringIO
 import optparse
-import subprocess
 import sys
 
 from cr_cache import arguments, commands
@@ -160,27 +159,3 @@ class TestUIContract(TestCase):
             default=False, help="Do something.")]
         ui.set_command(cmd)
         self.assertEqual(False, ui.options.demo)
-
-    def test_exec_subprocess(self):
-        # exec_subprocess should 'work like popen'.
-        ui = self.ui_factory()
-        proc = ui.subprocess_Popen([sys.executable, "-V"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = proc.communicate()
-        proc.returncode
-
-    def test_subprocesses_have_stdin(self):
-        # exec_subprocess should 'work like popen'.
-        ui = self.ui_factory()
-        proc = ui.subprocess_Popen([sys.executable, "-V"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        proc.stdout.read(0)
-        out, err = proc.communicate()
-
-    def test_subprocesses_have_stdout(self):
-        # exec_subprocess should 'work like popen'.
-        ui = self.ui_factory()
-        proc = ui.subprocess_Popen([sys.executable, "-V"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        proc.stdout.read(0)
-        out, err = proc.communicate()

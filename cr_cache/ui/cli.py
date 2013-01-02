@@ -15,7 +15,6 @@
 """A command line UI for cr_cache."""
 
 import os
-import signal
 import sys
 
 from cr_cache import ui
@@ -148,15 +147,3 @@ class UI(ui.AbstractUI):
             if args != []:
                 self._stderr.write("Unexpected arguments: %r\n" % args)
         return not failed and args == []
-
-    def _clear_SIGPIPE(self):
-        """Clear SIGPIPE : child processes expect the default handler."""
-        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-
-    def subprocess_Popen(self, *args, **kwargs):
-        import subprocess
-        if os.name == "posix":
-            # GZ 2010-12-04: Should perhaps check for existing preexec_fn and
-            #                combine so both will get called.
-            kwargs['preexec_fn'] = self._clear_SIGPIPE
-        return subprocess.Popen(*args, **kwargs)

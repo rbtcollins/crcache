@@ -16,6 +16,7 @@
 
 import ConfigParser
 from StringIO import StringIO
+import subprocess
 
 from testtools.matchers import raises
 
@@ -26,6 +27,7 @@ from cr_cache.source import (
     model,
     pool,
     TooManyInstances,
+    UnknownInstance,
     )
 from cr_cache.store.memory import Store
 from cr_cache.tests import TestCase
@@ -99,6 +101,23 @@ class TestConfigConstruction(TestCase):
         instances = source.provision(self.test_maximum)
         self.addCleanup(source.discard, instances)
         self.assertThat(lambda: source.provision(1), raises(TooManyInstances))
+
+    def test_run(self):
+        source = self.make_source()
+        resource = source.provision(1)[0]
+        self.addCleanup(source.discard, [resource])
+        # NB: we can't assume sys.executable is present, as sources may be
+        # returning machines with different python versions etc.
+        proc = source.subprocess_Popen(resource, 
+            ['echo', 'foo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = proc.communicate()
+        self.assertEqual('foo\n', out)
+        self.assertEqual(0, proc.returncode)
+
+    def test_run_bad_resource(self):
+        source = self.make_source()
+        self.assertThat(lambda:source.subprocess_Popen('invalid', ['echo']),
+            raises(UnknownInstance))
 
 
 class TestHelpers(TestCase):

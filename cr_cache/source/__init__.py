@@ -61,6 +61,14 @@ class AbstractSource(object):
         """Discard one or more instances."""
         raise NotImplementedError(self.discard)
 
+    def subprocess_Popen(self, instance, *args, **kwargs):
+        """Call an external process via the source.
+        
+        The behaviour of this call should match that of subprocess.Popen with
+        one exception - SIGPIPE should be defaulted automatically.
+        """
+        raise NotImplementedError(self.subprocess_Popen)
+
 
 def find_source_type(name):
     modname = "cr_cache.source.%s" % name
@@ -69,3 +77,7 @@ def find_source_type(name):
 
 class TooManyInstances(Exception):
     """Too many instances have been pulled (or would be pulled)."""
+
+
+class UnknownInstance(ValueError):
+    """An unknown resource was requested/supplied."""

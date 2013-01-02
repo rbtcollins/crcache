@@ -63,3 +63,14 @@ class Source(source.AbstractSource):
                 child.discard(discard_map[child.name])
         # Note that discards for no longer configured children are
         # currently silently discarded.
+
+    def subprocess_Popen(self, resource, *args, **kwargs):
+        try:
+            name, child_resource = resource.split('-', 1)
+        except ValueError:
+            raise source.UnknownInstance("No such resource %r." % resource)
+        for child in self.children:
+            if child.name == name:
+                return child.source.subprocess_Popen(
+                    child_resource, *args, **kwargs)
+        raise source.UnknownInstance("No such resource %r." % resource)

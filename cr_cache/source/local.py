@@ -14,6 +14,10 @@
 
 """Locally defined and obtained computing resource."""
 
+import os
+import signal
+import subprocess
+
 from cr_cache import source
 
 class Source(source.AbstractSource):
@@ -26,3 +30,16 @@ class Source(source.AbstractSource):
 
     def _init(self):
         self.maximum = 1
+
+    def _clear_SIGPIPE(self):
+        """Clear SIGPIPE : child processes expect the default handler."""
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+    def subprocess_Popen(self, resource, *args, **kwargs):
+        if resource != 'local':
+            raise source.UnknownInstance("No such resource %r." % resource)
+        if os.name == "posix":
+            # GZ 2010-12-04: Should perhaps check for existing preexec_fn and
+            #                combine so both will get called.
+            kwargs['preexec_fn'] = self._clear_SIGPIPE
+        return subprocess.Popen(*args, **kwargs)

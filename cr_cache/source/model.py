@@ -15,11 +15,32 @@
 """In-memory testing 'computing' resource."""
 
 from itertools import count, islice
+from StringIO import StringIO
 
 from cr_cache import source
 
+class ProcessModel(object):
+    """A subprocess.Popen test double."""
+
+    def __init__(self, ui):
+        self.ui = ui
+        self.returncode = 0
+        self.stdin = StringIO()
+        self.stdout = StringIO()
+
+    def communicate(self):
+        self.ui._calls.append(('communicate',))
+        return self.stdout.getvalue(), ''
+
+    def wait(self):
+        return self.returncode
+
+
 class Source(source.AbstractSource):
-    """An in-memory testing source."""
+    """An in-memory testing source.
+    
+    All commands run through it output 'foo\n'.
+    """
 
     def _init(self):
         self._generator = count()
@@ -32,3 +53,14 @@ class Source(source.AbstractSource):
     def discard(self, instances):
         self._calls.append(('discard', instances))
         return None
+
+    def subprocess_Popen(self, resource, *args, **kwargs):
+        try:
+            int(resource)
+        except ValueError:
+            raise source.UnknownInstance(resource)
+        # Really not an output - outputs should be renamed to events.
+        self._calls.append(('popen', args, kwargs))
+        result = ProcessModel(self)
+        result.stdout = StringIO('foo\n')
+        return result

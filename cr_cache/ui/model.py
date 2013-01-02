@@ -20,23 +20,6 @@ import optparse
 from cr_cache import ui
 
 
-class ProcessModel(object):
-    """A subprocess.Popen test double."""
-
-    def __init__(self, ui):
-        self.ui = ui
-        self.returncode = 0
-        self.stdin = StringIO()
-        self.stdout = StringIO()
-
-    def communicate(self):
-        self.ui.outputs.append(('communicate',))
-        return self.stdout.getvalue(), ''
-
-    def wait(self):
-        return self.returncode
-
-
 class UI(ui.AbstractUI):
     """A object based UI.
     
@@ -118,13 +101,3 @@ class UI(ui.AbstractUI):
 
     def output_values(self, values):
         self.outputs.append(('values', values))
-
-    def subprocess_Popen(self, *args, **kwargs):
-        # Really not an output - outputs should be renamed to events.
-        self.outputs.append(('popen', args, kwargs))
-        result = ProcessModel(self)
-        if self.proc_outputs:
-            result.stdout = StringIO(self.proc_outputs.pop(0))
-        if self.proc_results:
-            result.returncode = self.proc_results.pop(0)
-        return result
