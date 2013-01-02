@@ -79,21 +79,19 @@ of two concepts:
 2. Individual resources.
 
 Any given project will have its own configuration to perform on a machine
-(e.g. installing dependencies, checking out source code). This implies a third
-concept:
-
-3. Project.
+(e.g. installing dependencies, checking out source code). This could imply a
+third concept - ``Project``, but can also be represented as just a layered
+source of resources, where the layer consumes from the layer below and performs
+whatever configuration is needed.
 
 After configuring a resource for a project, the resource is ready to be used.
 To mask latency or avoid repeated work, preparing multiple resources in advance
-may be useful, which introduces a fourth concept:
-
-4. Pooled / Allocated resources.
+may be useful, which also argues for a new concept - ``resource pools``.
 
 However, there isn't (yet) any clear important differentiator between a source
 of compute resources and a pool that draws from other sources - we can treat
-a pool as just another source. So, Pooled/allocated resources will exist but
-only as a specialised resource source.
+a pool as just another source. So, like project, pooled resources will exist
+but only as a specialised resource source.
 
 It can be argued that sources like EC2 which require credentials and so on
 should be given two levels of configuration - global and per-project-binding.
@@ -104,12 +102,12 @@ systems, bind mounting, bind mounting with layered file sytems, or even cluster
 file systems. This offers huge performance benefits when used, so this becomes
 a necessary concept:
 
-4. Filesystem exporting.
+3. Filesystem exporting.
 
 We need to let users run arbitrary code under crcaches control from time to
 time, so thats also a necessary concept:
 
-5. Extension points.
+4. Extension points.
 
 The lifecycle of a resource, with all optimisations in place, will be something
 like:
@@ -120,17 +118,17 @@ like:
 2. Perform per-project configuration and place into a pool ready for use.
    The pool might be a stopped lxc container, or a running but idle cloud
    instance.
-   [needs resource, project, produces pooled resource]
+   [needs resource, pool source, produces resource]
 
 3. Take it out of the pool and perform per-revision configuration.
-   [needs pool and project, produces allocated resource]
+   [needs pool, produces allocated resource]
 
 4. Run some commands on it / copy files to or from it.
    [needs allocated resource]
 
 5. Reset it to pool-status. This might involve stopping it and doing an lvm
    rollback, unmounting an aufs filesystem from a chroot, or doing nothing.
-   [needs allocated resource, produces pooled resource]
+   [needs allocated resource, discards resource]
 
 6. Repeat 3-5 as needed.
 
@@ -148,7 +146,7 @@ Scale
 Sources have a range of concurrency. Fixed resources have the lower and upper
 bounds the same, indicating that there is no way to discard such resources.
 However, they start out with none allocated. Sources with non-zero lower bounds
-can be preferentially used to fill pool requests.
+could be preferentially used to fill pool requests.
 
 Provision
 ---------
@@ -180,6 +178,20 @@ Runs commands locally. Possible configuration options:
 * Can import filesystems by bind mounting or even just running in the right
   dir.
 
+SSH source
+----------
+
+Runs commands by sshing into a host. Possible configuration options:
+
+* Host to ssh into
+
+* Optional source to layer on? [permits bastion hosts]
+  Raises the question of shared use of a bastion host - how to avoid locking
+  other users out when the actual resource being used is behind the bastion
+  host, while still not permitting the bastion host to be gc'd.
+
+* Number of instances to export ?
+
 Chroot source
 -------------
 
@@ -193,21 +205,14 @@ Makes chroots. Configuration options:
 
 * import filesystems by bind mounting
 
+* Layers on a base level source.
+
+* Number of chroots to permit ?
+
 LXC source
 ----------
 
 Make LXC containers. Same basic options as chroots.
-
-SSH Source
-----------
-
-Ssh's into an explicitly configured endpoint. Configuration options:
-
-* SSH url - username / endpoint.
-
-* SSH private key / password?
-
-* CWD to switch to ?
 
 Cloud source
 ------------
@@ -289,42 +294,6 @@ What sort of imports can this resource utilise?
 
 * others in future?
 
-Projects
-========
-
-Allocating
-----------
-
-Taking a resource and starting using it is 'allocating'. Once allocated the
-resource is reserved until it is returned.
-
-There may be configuration steps required to use the resource. For instance,
-sychronising the current version of the source tree onto it. Should that be
-done on top of the 'run command' primitive?
-
-For same-machine environments, bind mounting a source tree into the container
-would be extremely useful. For remote environments, rsync + explicit copies
-of individual files is a good basis.
-
-On the simplicity side, having a single way that doesn't interact with other
-aspects would be better. On the other hand, the efficiency with which things
-run is a key aspects of this project.
-
-So, an extension point to run when taking a resource and giving it to a project
-will allow per-usage setup.
-
-Part of allocation should be configuring filesystem imports - what local paths
-to inject into the compute environment, and whether to have writes there be
-replicated back.
-
-Returning
----------
-
-Trivially returning should undo any filesystem imports. Symmetrically to
-allocation, having an extension point will let folk orchestrate shutdown of
-database servers or other moderately expensive services once they are not
-needed.
-
 Code layout
 ===========
 
@@ -338,6 +307,31 @@ all types.
 
 The tests for the code in cr_cache.foo.bar is in cr_cache.tests.foo.test_bar.
 Interface tests for cr_cache.foo is in cr_cache.tests.foo.test___init__.
+
+Key modules
+===========
+
+cache
+-----
+
+Responsible for arbitrating use of sources. Takes care to stay within limits,
+manage reserved resources etc.
+
+source
+------
+
+Pluggable interface for supplying compute resources. Takes care of making,
+discarding, and running commands on compute resources.
+
+ui
+--
+
+User interfaces.
+
+commands
+--------
+
+Tasks users can perform.
 
 External integration
 ====================

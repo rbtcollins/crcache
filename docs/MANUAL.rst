@@ -29,9 +29,8 @@ Using pip is the easiest way to install crcache::
 Configuration
 =============
 
-The default configuration is to have a project ``fallback`` that acts as a
-fallback for unknown projects and a single source ``local`` that the fallback
-project binds to.
+The default configuration is to have a single source ``local`` which runs
+commands locally.
 
 Search path
 -----------
@@ -56,9 +55,9 @@ source::
 
     [DEFAULT]
     ; What sort of source is this?
-    type=[local|pool]
+    type=[local|pool|ssh]
     ; Do not discard instances if less than this many are running.
-    ; Defaults to 0 - caching is usually done at the project level.
+    ; Defaults to 0 - avoids caching expensive resources w/out warning.
     reserve=int
     ; Do not scale out beyond this many instances.
     ; Defaults to 0 - no limit.
@@ -68,39 +67,15 @@ source::
     concurrency=int
     ; For pools only
     sources=sourcename,sourcename,...
+    ; For ssh only
+    ssh_host=string
 
 If a directory called ``provision.d`` exists as a sibling to ``source.conf`` then
-its contents will be run on instances as they are provisioned (using run-parts).
+its contents will be run as they are provisioned (using run-parts). The resource
+name is supplied to the scripts as the first parameter - the script can call
+``crcache run`` to execute commands on the resource.
 
 Likewise for ``discard.d`` immediately before discarding an instance.
-
-Projects
---------
-
-Each ``project`` is a subdirectory of a config root -
-``$root/projects/$projectname``. Projects bind sources to project specific
-configuration.
-
-A project called ``fallback`` will replace the implicit definition of the
-fallback project. Defining it with no source bindings will cause calls
-for unknown projects to fail.
-
-The file ``project.conf`` is a .ini file that controls basic metadata for
-projects::
-
-    [DEFAULT]
-    ; Do not discard instances if less than this many are running.
-    ; Defaults to 0 - no caching of instances.
-    reserve=int
-    ; Do not scale out beyond this many instances.
-    ; Defaults to 0 - no limit.
-    maximum=int
-    ; Override the concurrency of returned instances, rather than probing.
-    ; Defaults to 0 - autoprobe.
-    concurrency=int
-    ; A comma separated list of sources to draw from.
-    ; defaults to an empty list - will make the project unusable.
-    sources=sourcename,sourcename,...
 
 Command line
 ============
@@ -178,3 +153,32 @@ Internals
 
 Each source stores the instances it has obtained and has cached in the crcache
 store, stored in $HOME/.cache/crcache/state.dbm.
+
+API
+===
+
+The internal API is largely uninteresting for users - and see the DESIGN and
+DEVELOPER documentation if you are interested. That said, one possibly common
+need is creating additional source types, and so we cover that here.
+
+Source types are looked up by looking for a python module with the same name
+in the ``cr_cache.source.`` package namespace. They can be installed as a
+third-party using namespace packages, or patched into the main crcache
+source tree. Source modules should include a ``Source`` class, which the
+source type loader looks for - you can subclass ``source.AbstractSource``
+or just implement its contract. The loader will instantiate a ``Source``
+instance with a ``ConfigParser`` and a ``get_source`` callback (which permits
+sources to layer on other sources).
+
+Sources are responsible for four things:
+
+* Making instances that can run commands.
+
+* Assigning unique (to the crcache instance) ids for the instances.
+
+* Discarding such instances.
+
+* Running commands on the instances.
+
+Other operations, such as enforcing a limit on the number of instances, caching
+of instances, are taken care of by crcache infrastructure.
