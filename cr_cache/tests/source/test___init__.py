@@ -26,6 +26,7 @@ from cr_cache.source import (
     local,
     model,
     pool,
+    ssh,
     TooManyInstances,
     UnknownInstance,
     )
@@ -54,6 +55,12 @@ sources=a,b,c
 source_implementations.append(('local',
     {'source_factory': local.Source,
     'reference_config': """[DEFAULT]
+""",
+    'test_maximum': 1}))
+source_implementations.append(('ssh',
+    {'source_factory': ssh.Source,
+    'reference_config': """[DEFAULT]
+ssh_host=localhost
 """,
     'test_maximum': 1}))
 

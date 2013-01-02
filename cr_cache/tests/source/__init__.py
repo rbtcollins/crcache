@@ -23,6 +23,7 @@ def test_suite():
         'local',
         'model',
         'pool',
+        'ssh',
     ]
     test_names = ['cr_cache.tests.source.test_' + name for name in test_mods]
     loader = unittest.TestLoader()
