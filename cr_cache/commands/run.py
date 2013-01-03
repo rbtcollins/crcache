@@ -30,7 +30,7 @@ class run(Command):
 
     args = [
         string.StringArgument('resource'),
-        string.StringArgument('command'),
+        string.StringArgument('command', min=0),
         string.StringArgument('args', min=0, max=None),
         doubledash.DoubledashArgument(),
         string.StringArgument('moreargs', min=0, max=None),

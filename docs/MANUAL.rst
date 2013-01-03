@@ -128,8 +128,13 @@ run
 
 Runs a command on a checked out resource::
 
-    $ crcache run -s pool-0 echo foo
+    $ crcache run pool-0 echo foo
     foo
+
+Get a shell on the resource::
+
+    $ crcache run pool-0
+    ...
 
 copy
 ----

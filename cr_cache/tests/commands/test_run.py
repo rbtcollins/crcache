@@ -42,3 +42,20 @@ class TestCommand(TestCase):
         # do progress bars and chatter sanely?
         self.assertEqual([], ui.outputs)
         self.assertEqual(0, result)
+
+    def test_run_no_command(self):
+        self.skip('stdin stubbing not implemented, test suite would hang.')
+        # Running nothing should just get a shell.
+        self.useFixture(SourceConfigFixture('model', 'model'))
+        self.useFixture(SourceConfigFixture('pool', 'pool', sources="model"))
+        conf = Config()
+        source = conf.get_source('pool')
+        resources = list(source.provision(1))
+        args = [resources[0]]
+        ui, cmd = self.get_test_ui_and_cmd(args=args)
+        result = cmd.execute()
+        # XXX: Perhaps sources should get the ui object passed down? let them
+        # do progress bars and chatter sanely?
+        self.assertEqual([], ui.outputs)
+        self.assertEqual(0, result)
+

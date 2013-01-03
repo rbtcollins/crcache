@@ -42,6 +42,6 @@ class Source(source.AbstractSource):
         # Perhaps should use a master connection to reduce latency on
         # subsequent commands.
         backend = source.local.Source(None, None)
-        command = ['ssh', self.hostname] + args[0]
+        command = ['ssh', '-t', self.hostname] + args[0]
         args = (command,) + args[1:]
         return backend.subprocess_Popen('local', *args, **kwargs)

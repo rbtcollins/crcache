@@ -43,11 +43,14 @@ class Source(source.AbstractSource):
         """Clear SIGPIPE : child processes expect the default handler."""
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
-    def subprocess_Popen(self, resource, *args, **kwargs):
+    def subprocess_Popen(self, resource, command, *args, **kwargs):
         if resource != 'local':
             raise source.UnknownInstance("No such resource %r." % resource)
         if os.name == "posix":
             # GZ 2010-12-04: Should perhaps check for existing preexec_fn and
             #                combine so both will get called.
             kwargs['preexec_fn'] = self._clear_SIGPIPE
-        return subprocess.Popen(*args, **kwargs)
+        if not command:
+            # Run a shell for the user.
+            command = [os.environ['SHELL']]
+        return subprocess.Popen(command, *args, **kwargs)
