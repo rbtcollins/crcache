@@ -68,3 +68,17 @@ class TestCommand(TestCase):
                 ('model', '1', '0', '0'),
                 ]),
             ], ui.outputs)
+
+    def test_filter_source(self):
+        ui, cmd = self.get_test_ui_and_cmd(args=['local'])
+        self.useFixture(SourceConfigFixture('model', 'model', reserve=1))
+        source = Config().get_source('model')
+        source.fill_reserve()
+        cmd.execute()
+        self.assertEqual(
+            [('table', [
+                ('source', 'cached', 'in-use', 'max'),
+                ('local', '0', '0', '1'),
+                ]),
+            ], ui.outputs)
+

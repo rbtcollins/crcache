@@ -14,11 +14,14 @@
 
 """Report status about the system."""
 
+from cr_cache.arguments import string
 from cr_cache.commands import Command
 from cr_cache import config
 
 class status(Command):
     """Get help on a command."""
+
+    args = [string.StringArgument('(re)sources', min=0, max=None)]
 
     def run(self):
         conf = config.Config()
@@ -26,7 +29,14 @@ class status(Command):
         sources = config.sources(config.default_path())
         if 'local' not in sources:
             sources.add('local')
+        if self.ui.arguments['(re)sources']:
+            query = sorted(self.ui.arguments['(re)sources'])
+            check = set(query).__contains__
+        else:
+            check = lambda x:True
         for source_name in sorted(sources):
+            if not check(source_name):
+                continue
             source = conf.get_source(source_name)
             cached = str(source.cached())
             in_use = str(source.in_use())
