@@ -10,6 +10,9 @@ requirement for testing environments, and having an abstraction layer allows
 a single project setup to scale in dramatically different ways just by the
 user reconfiguring their crcache config.
 
+This manual covers both part planned works and implemented works. If something
+doesn't work please file a bug.
+
 Requirements
 ============
 
@@ -98,18 +101,19 @@ Provides details of sources and resources::
 
     $ crcache status -v
     source: local
-    cached: 
-    in-use: local
+    cached: 0
+    in-use: 1
     minimum: 1
     maximum: 1
 
     source: pool
-    cached: local
-    in-use:
+    cached: 1
+    in-use: 0
     minimum: 1
     maximim: 1
 
-    $ crcache status -a
+    $ crcache status --query available pool
+    1
 
 acquire
 -------
@@ -141,7 +145,7 @@ copy
 
 Copies files into (or out of) the resource::
 
-    $ crcache cp pool-0:foo bar
+    $ crcache cp /tmp/foo pool-0:/tmp
 
 release
 -------

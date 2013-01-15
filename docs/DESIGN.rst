@@ -1,6 +1,10 @@
 Design / Architecture of crcache
 ++++++++++++++++++++++++++++++++
 
+NB: This document describes intent as much as actuality. The code has
+precedence where things differ (though for to-implement features, the code may
+simply be not-yet-written).
+
 Primary Goals
 =============
 
