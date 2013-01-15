@@ -23,8 +23,8 @@ from cr_cache.tests.test_config import SourceConfigFixture
 
 class TestCommand(TestCase):
 
-    def get_test_ui_and_cmd(self,args=()):
-        ui = UI(args=args)
+    def get_test_ui_and_cmd(self,args=(), options=()):
+        ui = UI(args=args, options=options)
         cmd = status.status(ui)
         ui.set_command(cmd)
         return ui, cmd
@@ -81,4 +81,13 @@ class TestCommand(TestCase):
                 ('local', '0', '0', '1'),
                 ]),
             ], ui.outputs)
+
+    def test_query_field(self):
+        ui, cmd = self.get_test_ui_and_cmd(
+            args=['local'], options=[('query', 'available')])
+        self.useFixture(SourceConfigFixture('model', 'model', reserve=1))
+        source = Config().get_source('model')
+        source.fill_reserve()
+        cmd.execute()
+        self.assertEqual([('rest', '1')], ui.outputs)
 

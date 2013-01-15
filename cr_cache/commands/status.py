@@ -14,14 +14,24 @@
 
 """Report status about the system."""
 
+from operator import attrgetter, methodcaller
+import optparse
+
 from cr_cache.arguments import string
 from cr_cache.commands import Command
 from cr_cache import config
 
 class status(Command):
-    """Get help on a command."""
+    """Show cache status."""
 
     args = [string.StringArgument('(re)sources', min=0, max=None)]
+    options = [
+        optparse.Option(
+            "--query", default=None,
+            help="Query a single field. Returns the sum of that field for all"
+                " selected sources.",
+            choices=['cached', 'in-use', 'max', 'available']),
+        ]
 
     def run(self):
         conf = config.Config()
@@ -34,10 +44,22 @@ class status(Command):
             check = set(query).__contains__
         else:
             check = lambda x:True
-        for source_name in sorted(sources):
-            if not check(source_name):
-                continue
-            source = conf.get_source(source_name)
+        sources = [conf.get_source(source_name) for source_name
+            in sorted(sources) if check(source_name)]
+        def available(source):
+            return source.maximum - source.in_use()
+        if self.ui.options.query:
+            source_map = {
+                'cached': methodcaller('cached'),
+                'in-ues': methodcaller('in_use'),
+                'max': attrgetter('maximum'),
+                'available': available
+                }
+            lookup = source_map[self.ui.options.query]
+            result = sum(map(lookup, sources))
+            self.ui.output_rest('%d' % result)
+            return 0
+        for source in sources:
             cached = str(source.cached())
             in_use = str(source.in_use())
             table.append((source.name, cached, in_use, str(source.maximum)))
