@@ -55,7 +55,7 @@ def get_version():
         return version + '-next'
 
 
-description = file(os.path.join(os.path.dirname(__file__), 'README.rst'), 'rb').read()
+description = open(os.path.join(os.path.dirname(__file__), 'README.rst'), 'rt').read()
 
 
 cmdclass = {}
