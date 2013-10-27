@@ -43,11 +43,11 @@ class TemporaryCommand(Fixture):
         self.pkg = self.useFixture(
             PythonPackage('commands',
             [('%s.py' % self.cmd_name,
-             """from cr_cache.commands import Command
+             ("""from cr_cache.commands import Command
 class %s(Command):
     def run(self):
         pass
-""" % self.cmd_name)], init=False))
+""" % self.cmd_name).encode('utf8'))], init=False))
         self.path = os.path.join(self.pkg.base, 'commands')
         self.addCleanup(commands.__path__.remove, self.path)
         commands.__path__.append(self.path)
