@@ -35,6 +35,24 @@ from cr_cache.source import (
 from cr_cache.store.memory import Store
 from cr_cache.tests import TestCase
 
+
+def find_src_address():
+    """Find an address we can ssh to.
+
+    127.0.0.1 isn't safe as bind mounted home dirs in lxc containers will
+    suffer host key collisions. Instead we use (an arbitrary) outbound src
+    address, which will be more unique. If there is no such address, we use
+    localhost, to handle working on the host itself with no networking.
+    """
+    routes = subprocess.check_output(['ip', 'route'])
+    routes = routes.decode('utf8')
+    address = None
+    for line in routes.splitlines():
+        if ' src ' in line:
+            return line.split(' ')[-2]
+    return 'localhost'
+
+
 # A list of implementations to test. 
 # The source_factory should stub out anything needed to let provision and
 # discard be called. They should either work during the test suite, or
@@ -62,8 +80,8 @@ source_implementations.append(('local',
 source_implementations.append(('ssh',
     {'source_factory': ssh.Source,
     'reference_config': """[DEFAULT]
-ssh_host=localhost
-""",
+ssh_host=%s
+""" % find_src_address(),
     'test_maximum': 1}))
 
 
