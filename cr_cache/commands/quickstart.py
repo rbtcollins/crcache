@@ -94,6 +94,10 @@ its a bug) on any platform as long as you have:
 
 * Python 2.6+ or 3.2+.
 
+* The 'extras' Python module.
+
+* The 'six' Python module.
+
 Some of the provider plugins for cr_cache may be less portable. When a provider
 depends on things outside the standard library (or newer than the version range
 above), it is placed in a separate tree, so that its installation is optional.
