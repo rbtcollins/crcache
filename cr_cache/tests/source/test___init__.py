@@ -20,7 +20,7 @@ ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 from StringIO import StringIO
 import subprocess
 
-from testtools.matchers import raises
+from testtools.matchers import Equals, MatchesAny, raises
 
 from cr_cache.cache import Cache
 from cr_cache.source import (
@@ -148,7 +148,7 @@ class TestSourceInterface(TestCase):
         proc = source.subprocess_Popen(resource, 
             ['echo', 'foo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate()
-        self.assertEqual('foo\n', out)
+        self.assertThat(out, MatchesAny(Equals(b'foo\n'), Equals(b'foo\r\n')))
         self.assertEqual(0, proc.returncode)
 
     def test_run_bad_resource(self):
