@@ -24,7 +24,7 @@ class TestLocalStore(TestCase):
 
     def test_dbm_in_homedir(self):
         self.assertFalse(
-            os.path.exists(os.path.expanduser('~/.cache/crcache/state.dbm')))
+            os.path.exists(os.path.expanduser('~/.cache/crcache/state.db')))
         store = local.Store()
         self.assertTrue(
-            os.path.exists(os.path.expanduser('~/.cache/crcache/state.dbm')))
+            os.path.exists(os.path.expanduser('~/.cache/crcache/state.db')))

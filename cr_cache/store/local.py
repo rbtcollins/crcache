@@ -19,7 +19,7 @@ metadata.
 """
 
 from extras import try_imports
-dbm = try_imports(['anydbm', 'dbm'])
+dbm = try_imports(['dbm', 'dbm.ndbm'])
 import os.path
 
 from cr_cache.store import AbstractStore
@@ -27,13 +27,13 @@ from cr_cache.store import AbstractStore
 class Store(AbstractStore):
     """General store for most crcache operations.
 
-    Stores data in ~/.cache/crcache/state.dbm.
+    Stores data in ~/.cache/crcache/state.db.
     Updates may be batched depending on the dbm implementation, with a lock
     kept in state.lck.
     """
 
     def __init__(self):
-        self.dbm_path = os.path.expanduser('~/.cache/crcache/state.dbm')
+        self.dbm_path = os.path.expanduser('~/.cache/crcache/state')
         self.dbm_lock = os.path.expanduser('~/.cache/crcache/state.lck')
         self._locked = 0
         # Check it is usable, create empty db if needed.
