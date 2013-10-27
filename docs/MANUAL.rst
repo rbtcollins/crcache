@@ -93,25 +93,6 @@ Provides details of sources and resources::
     local   0       1      1
     pool    1       0      1
 
-    $ crcache status -t
-    source  cached  in-use max
-    pool    1       0      1
-    + local 
-    local   0       1      1
-
-    $ crcache status -v
-    source: local
-    cached: 0
-    in-use: 1
-    minimum: 1
-    maximum: 1
-
-    source: pool
-    cached: 1
-    in-use: 0
-    minimum: 1
-    maximim: 1
-
     $ crcache status --query available pool
     1
 
@@ -161,7 +142,7 @@ Internals
 =========
 
 Each source stores the instances it has obtained and has cached in the crcache
-store, stored in $HOME/.cache/crcache/state.dbm.
+store, stored in $HOME/.cache/crcache/state.db.
 
 API
 ===
