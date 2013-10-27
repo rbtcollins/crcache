@@ -14,7 +14,7 @@
 
 """Am object based UI for cr_cache."""
 
-from cStringIO import StringIO
+from io import StringIO
 import optparse
 
 from cr_cache import ui
