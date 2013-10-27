@@ -12,22 +12,15 @@
 # license you chose for the specific language governing permissions and
 # limitations under that license.
 
-"""Tests for crcache.commands."""
+"""List available commands."""
 
-import unittest
+import cr_cache.commands
 
-def test_suite():
-    """Test suite thunk, manually defined for Python 2.6."""
-    test_mods = [
-        '__init__',
-        'acquire',
-        'commands',
-        'help',
-        'quickstart',
-        'release',
-        'run',
-        'status',
-    ]
-    test_names = ['cr_cache.tests.commands.test_' + name for name in test_mods]
-    loader = unittest.TestLoader()
-    return loader.loadTestsFromNames(test_names)
+class commands(cr_cache.commands.Command):
+    """List available commands."""
+
+    def run(self):
+        table = [('command', 'description')]
+        for command in cr_cache.commands.iter_commands():
+            table.append((command.name, command.get_summary()))
+        self.ui.output_table(table)
