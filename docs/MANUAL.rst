@@ -51,7 +51,10 @@ Each ``source`` is a subdirectory of a config root -
 compute resources.
 
 A source called ``local`` will replace the implicit definition of the local
-source.
+source. Source names are global - if there are two different project-local
+configurations for a single source (such as ``myprojectsource``) then acquiring
+a resource from one such config and returning it via the other may happen.
+This is usually super confusing, so we recommend against it.
 
 The file ``source.conf`` is a .ini file that controls basic metadata for the
 source::
