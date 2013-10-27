@@ -17,7 +17,7 @@
 import extras
 
 ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
-from StringIO import StringIO
+from io import StringIO
 import subprocess
 
 from testtools.matchers import Equals, MatchesAny, raises
@@ -64,22 +64,22 @@ def find_src_address():
 source_implementations = []
 source_implementations.append(('model',
     {'source_factory': model.Source,
-    'reference_config': """""",
+    'reference_config': u"""""",
     'test_maximum': 0}))
 source_implementations.append(('pool',
     {'source_factory': pool.Source,
-    'reference_config': """[DEFAULT]
+    'reference_config': u"""[DEFAULT]
 sources=a,b,c
 """,
     'test_maximum': 0}))
 source_implementations.append(('local',
     {'source_factory': local.Source,
-    'reference_config': """[DEFAULT]
+    'reference_config': u"""[DEFAULT]
 """,
     'test_maximum': 1}))
 source_implementations.append(('ssh',
     {'source_factory': ssh.Source,
-    'reference_config': """[DEFAULT]
+    'reference_config': u"""[DEFAULT]
 ssh_host=%s
 """ % find_src_address(),
     'test_maximum': 1}))
