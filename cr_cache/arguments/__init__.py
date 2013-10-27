@@ -86,7 +86,7 @@ class AbstractArgument(object):
         result = []
         error = None
         while len(argv) > count and (
-            count < self.maximum_count or self.maximum_count is None):
+            self.maximum_count is None or count < self.maximum_count):
             arg = argv[count]
             count += 1
             try:
