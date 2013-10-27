@@ -14,7 +14,9 @@
 
 """Tests for the crcache resource cache."""
 
-import ConfigParser
+import extras
+
+ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 import os.path
 
 from testtools.matchers import raises

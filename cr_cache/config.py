@@ -14,7 +14,9 @@
 
 """Configuration of cr_cache."""
 
-import ConfigParser
+import extras
+
+ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 import os.path
 
 from cr_cache import cache

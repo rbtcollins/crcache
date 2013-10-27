@@ -14,7 +14,9 @@
 
 """Tests for the crcache.source.pool module."""
 
-import ConfigParser
+import extras
+
+ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 
 from testtools.matchers import Equals, MatchesAny
 

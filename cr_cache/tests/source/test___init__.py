@@ -14,7 +14,9 @@
 
 """Tests for the crcache.source interface."""
 
-import ConfigParser
+import extras
+
+ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 from StringIO import StringIO
 import subprocess
 
