@@ -14,6 +14,7 @@
 
 """A command line UI for cr_cache."""
 
+import io
 import os
 import sys
 
@@ -43,18 +44,30 @@ class UI(ui.AbstractUI):
     def output_error(self, error_tuple):
         if 'CRCACHE_PDB' in os.environ:
             import traceback
-            self._stderr.write(''.join(traceback.format_tb(error_tuple[2])))
-            self._stderr.write('\n')
+            self._stderr.write(u''.join(traceback.format_tb(error_tuple[2])))
+            self._stderr.write(u'\n')
+            # This is terrible: it is because on Python2.x pdb writes bytes to
+            # its pipes, and the test suite uses io.StringIO that refuse bytes.
             import pdb;
+            if sys.version_info[0]==2:
+                if isinstance(self._stdout, io.StringIO):
+                    write = self._stdout.write
+                    def _write(text):
+                        return write(text.decode('utf8'))
+                    self._stdout.write = _write
             p = pdb.Pdb(stdin=self._stdin, stdout=self._stdout)
             p.reset()
             p.interaction(None, error_tuple[2])
-        self._stderr.write(str(error_tuple[1]) + '\n')
+        error_type = str(error_tuple[1])
+        # XX: Python2.
+        if type(error_type) is bytes:
+            error_type = error_type.decode('utf8')
+        self._stderr.write(error_type + u'\n')
 
     def output_rest(self, rest_string):
         self._stdout.write(rest_string)
         if not rest_string.endswith('\n'):
-            self._stdout.write('\n')
+            self._stdout.write(u'\n')
 
     def output_stream(self, stream):
         contents = stream.read(65536)
@@ -83,28 +96,28 @@ class UI(ui.AbstractUI):
             for idx, column in enumerate(row):
                 outputs.append(column)
                 if idx == len(row) - 1:
-                    outputs.append('\n')
+                    outputs.append(u'\n')
                     return
                 # spacers for the next column
-                outputs.append(' '*(widths[idx]-len(column)))
-                outputs.append('  ')
+                outputs.append(u' '*(widths[idx]-len(column)))
+                outputs.append(u'  ')
         show_row(contents[0])
         # title spacer
         for idx, width in enumerate(widths):
-            outputs.append('-'*width)
+            outputs.append(u'-'*width)
             if idx == len(widths) - 1:
-                outputs.append('\n')
+                outputs.append(u'\n')
                 continue
-            outputs.append('  ')
+            outputs.append(u'  ')
         for row in contents[1:]:
             show_row(row)
-        self._stdout.write(''.join(outputs))
+        self._stdout.write(u''.join(outputs))
 
     def output_values(self, values):
         outputs = []
         for label, value in values:
-            outputs.append('%s=%s' % (label, value))
-        self._stdout.write('%s\n' % ', '.join(outputs))
+            outputs.append(u'%s=%s' % (label, value))
+        self._stdout.write(u'%s\n' % ', '.join(outputs))
 
     def _check_cmd(self):
         parser = get_command_parser(self.cmd)
@@ -140,10 +153,10 @@ class UI(ui.AbstractUI):
             except ValueError:
                 exc_info = sys.exc_info()
                 failed = True
-                self._stderr.write("%s\n" % str(exc_info[1]))
+                self._stderr.write(u"%s\n" % str(exc_info[1]))
                 break
         if not failed:
             self.arguments = parsed_args
             if args != []:
-                self._stderr.write("Unexpected arguments: %r\n" % args)
+                self._stderr.write(u"Unexpected arguments: %r\n" % args)
         return not failed and args == []

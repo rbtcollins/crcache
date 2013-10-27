@@ -15,7 +15,7 @@
 """In-memory testing 'computing' resource."""
 
 from itertools import count, islice
-from StringIO import StringIO
+from io import BytesIO
 
 from cr_cache import source
 
@@ -25,8 +25,8 @@ class ProcessModel(object):
     def __init__(self, ui):
         self.ui = ui
         self.returncode = 0
-        self.stdin = StringIO()
-        self.stdout = StringIO()
+        self.stdin = BytesIO()
+        self.stdout = BytesIO()
 
     def communicate(self):
         self.ui._calls.append(('communicate',))
@@ -62,5 +62,5 @@ class Source(source.AbstractSource):
         # Really not an output - outputs should be renamed to events.
         self._calls.append(('popen', args, kwargs))
         result = ProcessModel(self)
-        result.stdout = StringIO('foo\n')
+        result.stdout = BytesIO(b'foo\n')
         return result

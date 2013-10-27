@@ -14,7 +14,7 @@
 
 """Tests for UI support logic and the UI contract."""
 
-from cStringIO import StringIO
+from io import BytesIO, StringIO
 import optparse
 import sys
 
@@ -65,7 +65,7 @@ class TestUIContract(TestCase):
         self.ui_factory()
 
     def test_factory_input_stream_args(self):
-        self.ui_factory([('input', 'value')])
+        self.ui_factory([('input', u'value')])
 
     def test_here(self):
         ui = self.get_test_ui()
@@ -82,12 +82,12 @@ class TestUIContract(TestCase):
     def test_output_rest(self):
         # output some ReST - used for help and docs.
         ui = self.get_test_ui()
-        ui.output_rest('')
+        ui.output_rest(u'')
 
     def test_output_stream(self):
         # a stream of bytes can be output.
         ui = self.get_test_ui()
-        ui.output_stream(StringIO())
+        ui.output_stream(BytesIO())
 
     def test_output_table(self):
         # output_table shows a table.

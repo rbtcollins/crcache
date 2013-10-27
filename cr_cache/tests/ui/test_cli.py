@@ -15,7 +15,7 @@
 """Tests for UI support logic and the UI contract."""
 
 import doctest
-from cStringIO import StringIO
+from io import StringIO
 import os
 import sys
 from textwrap import dedent
@@ -62,7 +62,7 @@ class TestCLIUI(TestCase):
 
     def test_stream_comes_from_stdin(self):
         stdout = StringIO()
-        stdin = StringIO('foo\n')
+        stdin = StringIO(u'foo\n')
         stderr = StringIO()
         ui = cli.UI([], stdin, stdout, stderr)
         cmd = commands.Command(ui)
@@ -75,7 +75,7 @@ class TestCLIUI(TestCase):
 
     def test_dash_d_sets_here_option(self):
         stdout = StringIO()
-        stdin = StringIO('foo\n')
+        stdin = StringIO(u'foo\n')
         stderr = StringIO()
         ui = cli.UI(['-d', '/nowhere/'], stdin, stdout, stderr)
         cmd = commands.Command(ui)
@@ -108,7 +108,7 @@ class TestCLIUI(TestCase):
             fooo
             """)
         stdout = StringIO()
-        stdin = StringIO('c\n')
+        stdin = StringIO(u'c\n')
         stderr = StringIO()
         ui = cli.UI([], stdin, stdout, stderr)
         ui.output_error(err_tuple)
@@ -117,12 +117,12 @@ class TestCLIUI(TestCase):
 
     def test_outputs_rest_to_stdout(self):
         ui, cmd = get_test_ui_and_cmd()
-        ui.output_rest('topic\n=====\n')
+        ui.output_rest(u'topic\n=====\n')
         self.assertEqual('topic\n=====\n', ui._stdout.getvalue())
 
     def test_outputs_stream_to_stdout(self):
         ui, cmd = get_test_ui_and_cmd()
-        stream = StringIO("Foo \n bar")
+        stream = StringIO(u"Foo \n bar")
         ui.output_stream(stream)
         self.assertEqual("Foo \n bar", ui._stdout.getvalue())
 
