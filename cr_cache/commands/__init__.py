@@ -54,6 +54,8 @@ def iter_commands():
     for path in paths:
         # For now, only support regular installs. TODO: support zip, eggs.
         for filename in os.listdir(path):
+            if filename == '__pycache__':
+                continue
             base = os.path.basename(filename)
             if base.startswith('.'):
                 continue
