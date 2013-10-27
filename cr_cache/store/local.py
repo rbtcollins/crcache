@@ -46,10 +46,10 @@ class Store(AbstractStore):
         self._unlock()
 
     def __getitem__(self, item):
-        return self._db[item]
+        return self._db[item].decode('utf8')
 
     def __setitem__(self, item, value):
-        self._db[item] = value
+        self._db[item] = value.encode('utf8')
 
     def __delitem__(self, item):
         del self._db[item]
