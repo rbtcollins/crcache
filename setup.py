@@ -97,6 +97,7 @@ setup(name='crcache',
         ],
       install_requires=[
         'extras',
+        'six',
         ],
       setup_requires=[
         'extras',
