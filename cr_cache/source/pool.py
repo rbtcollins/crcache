@@ -30,8 +30,8 @@ class Source(source.AbstractSource):
 
     def _init(self):
         source_names = self.config.get('DEFAULT', 'sources')
-        self.children = map(self.get_source, source_names.split(','))
-        child_maximums = map(lambda x:x.maximum, self.children)
+        self.children = list(map(self.get_source, source_names.split(',')))
+        child_maximums = list(map(lambda x:x.maximum, self.children))
         if 0 not in child_maximums:
             self.maximum = sum(child_maximums)
 
