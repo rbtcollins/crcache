@@ -19,7 +19,7 @@ import extras
 ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 import os.path
 
-from testtools.matchers import raises
+from testtools.matchers import Equals, MatchesAny, raises
 
 from cr_cache import cache
 from cr_cache.source import local, model, pool
@@ -200,14 +200,21 @@ class TestCache(TestCase):
         c.discard(c.provision(2))
         self.assertEqual(0, c.in_use())
         self.assertEqual(1, c.cached())
-        self.assertEqual(
-            [('provision', 2), ('discard', ['1'])], source._calls)
+        self.assertThat(source._calls, MatchesAny(
+            Equals([('provision', 2), ('discard', ['0'])]),
+            Equals([('provision', 2), ('discard', ['1'])])))
+        if source._calls[-1][-1][-1] == '0':
+            gone = 'resource/0'
+            remaining = '1'
+        else:
+            gone = 'resource/1'
+            remaining = '0'
         # The instance should have been unmapped in both directions from the
         # store.
         with read_locked(c.store):
-            self.assertEqual('0', c.store['pool/foo'])
-            self.assertThat(lambda:c.store['resource/1'], raises(KeyError))
-            self.assertEqual('foo', c.store['resource/0'])
+            self.assertEqual(remaining, c.store['pool/foo'])
+            self.assertThat(lambda:c.store[gone], raises(KeyError))
+            self.assertEqual('foo', c.store['resource/' + remaining])
 
     def test_discard_increases_available(self):
         source = model.Source(None, None)
@@ -220,8 +227,9 @@ class TestCache(TestCase):
         source = model.Source(None, None)
         c = cache.Cache("foo", memory.Store({}), source, reserve=1)
         c.discard(c.provision(2), force=True)
-        self.assertEqual(
-            [('provision', 2), ('discard', ['0', '1'])], source._calls)
+        self.assertThat(source._calls, MatchesAny(
+            Equals([('provision', 2), ('discard', ['0', '1'])]),
+            Equals([('provision', 2), ('discard', ['1', '0'])])))
         # The instance should have been unmapped in both directions from the
         # store.
         with read_locked(c.store):
