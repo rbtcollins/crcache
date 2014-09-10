@@ -155,6 +155,22 @@ like:
 Resource Source
 ===============
 
+Layering
+--------
+
+When layering on top of a parameterisable resource type it might be very
+powerful to permit late bound parameterisation.
+
+For instance, rather than having a fully parameterised lxc container
+source which includes template and release, we might partially parameterise
+it to include the template (e.g. ubuntu) but not release, then layer on that a
+number of pools each configured to ask for different things - one might depend
+on the lxc container with parameters: so one pool would describe how to setup
+a virtual env of a python 2.6, and have as its source ubuntu{release=lucid}.
+The next pool would describe how to setup python 2.7, and have as its source
+ubuntu{release=trusty}. The pools themselves would probably be parameterised
+with the python version, ubuntu-release, in order to avoid duplication.
+
 Scale
 -----
 
