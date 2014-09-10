@@ -148,8 +148,10 @@ class TestSourceInterface(TestCase):
         proc = source.subprocess_Popen(resource, 
             ['echo', 'foo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate()
+        self.assertEqual(
+            0, proc.returncode,
+            "process failed(%d) %r" % (proc.returncode, err))
         self.assertThat(out, MatchesAny(Equals(b'foo\n'), Equals(b'foo\r\n')))
-        self.assertEqual(0, proc.returncode)
 
     def test_run_bad_resource(self):
         source = self.make_source()
