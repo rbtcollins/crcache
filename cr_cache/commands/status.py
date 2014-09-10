@@ -31,11 +31,15 @@ class status(Command):
             help="Query a single field. Returns the sum of that field for all"
                 " selected sources.",
             choices=['cached', 'in-use', 'max', 'available']),
+        optparse.Option(
+            "--verbose", "-v", help="Show more details.",
+            default=False, action="store_true"),
         ]
 
     def run(self):
         conf = config.Config()
         table = [('source', 'cached', 'in-use', 'max')]
+        details_table = [('source', 'instance')]
         sources = config.sources(config.default_path())
         if 'local' not in sources:
             sources.add('local')
@@ -63,5 +67,15 @@ class status(Command):
             cached = str(source.cached())
             in_use = str(source.in_use())
             table.append((source.name, cached, in_use, str(source.maximum)))
+            if self.ui.options.verbose:
+                instances = sorted(source.instances())
+                if not instances:
+                    continue
+                details_table.append((source.name, instances[0]))
+                for instance in instances[1:]:
+                    details_table.append(('', instance))
         self.ui.output_table(table)
+        if self.ui.options.verbose:
+            self.ui.output_rest("\n")
+            self.ui.output_table(details_table)
         return 0

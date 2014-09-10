@@ -55,6 +55,22 @@ class TestCommand(TestCase):
                 ]),
             ], ui.outputs)
 
+    def test_shows_in_use_verbose(self):
+        ui, cmd = self.get_test_ui_and_cmd(options=[('verbose', True)])
+        self.useFixture(SourceConfigFixture('model', 'model'))
+        source = Config().get_source('model')
+        self.addCleanup(source.discard, source.provision(1))
+        cmd.execute()
+        self.assertEqual(
+            [('table', [
+                ('source', 'cached', 'in-use', 'max'),
+                ('local', '0', '0', '1'),
+                ('model', '0', '1', '0'),
+                ]),
+             ('rest', '\n'),
+             ('table', [('source', 'instance'), ('model', u'model-0')]),
+            ], ui.outputs)
+
     def test_shows_cached(self):
         ui, cmd = self.get_test_ui_and_cmd()
         self.useFixture(SourceConfigFixture('model', 'model', reserve=1))
@@ -90,4 +106,3 @@ class TestCommand(TestCase):
         source.fill_reserve()
         cmd.execute()
         self.assertEqual([('rest', '1')], ui.outputs)
-

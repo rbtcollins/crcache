@@ -99,6 +99,16 @@ Provides details of sources and resources::
     $ crcache status --query available pool
     1
 
+    $ crcache status -v
+    source  cached  in-use max
+    local   0       1      1
+    pool    1       0      1
+
+    source  instance
+    ------  -----------
+    local   local-local
+    pool    pool-0
+
 acquire
 -------
 
