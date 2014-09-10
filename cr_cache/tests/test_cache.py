@@ -236,3 +236,12 @@ class TestCache(TestCase):
             self.assertEqual('', c.store['pool/foo'])
             self.assertThat(lambda:c.store['resource/0'], raises(KeyError))
             self.assertThat(lambda:c.store['resource/1'], raises(KeyError))
+
+    def test_instances(self):
+        source = model.Source(None, None)
+        c = cache.Cache("foo", memory.Store({}), source)
+        self.assertEqual(set(), c.instances())
+        instances = c.provision(2)
+        self.assertEqual(set(instances), c.instances())
+        c.discard(c.instances())
+        self.assertEqual(0, c.in_use())

@@ -128,6 +128,12 @@ class Cache(object):
         with read_locked(self.store):
             return len(set(self._get_set('allocated/' + self.name)))
 
+    def instances(self):
+        """Enumerate the instances that have been checked out."""
+        with read_locked(self.store):
+            return self._external_name(
+                set(self._get_set('allocated/' + self.name)))
+
     def provision(self, count):
         """Request count instances from the cache.
 
@@ -163,7 +169,11 @@ class Cache(object):
             allocated = set(self._get_set('allocated/' + self.name))
             cached = list(existing - allocated)[:count]
             self._update_set('allocated/' + self.name, cached)
-            return set([self.name + '-' + instance for instance in cached])
+            return self._external_name(cached)
+
+    def _external_name(self, ids):
+        """Map ids from internal ids to external names."""
+        return set([self.name + '-' + instance for instance in ids])
 
     def _get_resources(self, count):
         """Get some resources.
