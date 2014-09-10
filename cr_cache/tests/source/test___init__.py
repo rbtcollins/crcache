@@ -44,7 +44,10 @@ def find_src_address():
     address, which will be more unique. If there is no such address, we use
     localhost, to handle working on the host itself with no networking.
     """
-    routes = subprocess.check_output(['ip', 'route'])
+    proc = subprocess.Popen(['ip', 'route'], stdout=subprocess.PIPE)
+    routes, err = proc.communicate()
+    if proc.returncode != 0:
+        return ''
     routes = routes.decode('utf8')
     address = None
     for line in routes.splitlines():
