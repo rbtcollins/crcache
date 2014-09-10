@@ -103,6 +103,7 @@ setup(name='crcache',
         'extras',
       ],
       tests_require=[
+        'discover',
         'fixtures',
         'testresources',
         'testscenarios',

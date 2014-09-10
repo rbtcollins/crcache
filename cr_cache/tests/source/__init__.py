@@ -13,18 +13,3 @@
 # limitations under that license.
 
 """Tests for crcache.source."""
-
-import unittest
-
-def test_suite():
-    """Test suite thunk, manually defined for Python 2.6."""
-    test_mods = [
-        '__init__',
-        'local',
-        'model',
-        'pool',
-        'ssh',
-    ]
-    test_names = ['cr_cache.tests.source.test_' + name for name in test_mods]
-    loader = unittest.TestLoader()
-    return loader.loadTestsFromNames(test_names)

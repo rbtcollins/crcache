@@ -36,7 +36,8 @@ Tests
 Can be run either with `./setup.py test` (which should install the needed
 dependencies) or `testr run` (if you have installed testrepository). If for
 some reason `setup.py test` does not install dependencies, they can be found
-by looking in ``setup.py``.
+by looking in ``setup.py``. Note that discover is required for python 2.6
+test loading.
 
 Copyright
 =========

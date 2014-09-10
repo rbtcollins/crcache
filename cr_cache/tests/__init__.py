@@ -20,6 +20,7 @@ e.g. tests for cr_cache.commands.* are in cr_cache.tests.commands.test_*, and
 the tests for cr_cache.commands itself are in cr_cache.tests.test___init__.
 """
 
+import os.path
 import unittest
 
 from fixtures import TempHomeDir
@@ -37,24 +38,11 @@ class TestCase(testtools.TestCase, testresources.ResourcedTestCase):
         self.homedir = self.useFixture(TempHomeDir()).path
 
 
-def test_suite():
+def load_tests(loader, tests, pattern):
     """Test suite thunk, manually defined for Python 2.6."""
-    test_mods = [
-        'cache',
-        'config',
-    ]
-    test_names = ['cr_cache.tests.test_' + name for name in test_mods]
-    test_pkgs = [
-        'arguments',
-        'commands',
-        'source',
-        'store',
-        'ui',
-    ]
-    test_names.extend(
-        ['cr_cache.tests.%s.test_suite' % name for name in test_pkgs])
-    loader = unittest.TestLoader()
-    result = loader.loadTestsFromNames(test_names)
-    result = generate_scenarios(result)
+    this_dir = os.path.dirname(__file__)
+    pkg_tests = loader.discover(start_dir=this_dir, pattern=pattern)
+    tests.addTest(pkg_tests)
+    result = generate_scenarios(tests)
     result = testresources.OptimisingTestSuite(result)
     return result
