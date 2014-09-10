@@ -15,6 +15,9 @@ Primary Goals
 * Make it possible for projects to have project specific config in-tree and
   machine/environment specific config maintained on the machine/environment.
 
+* Layer heavily on things like OpenStack, LXC, Docker and so forth: this is
+  an abstraction layer primarily, not an implementation layer.
+
 Musts
 =====
 
@@ -27,7 +30,7 @@ Musts
   provisioning / resetting / reuse.
 
 * Not require long lived daemon processes - when not being actively used,
-  crcache should be gone. [Optional features may require a daemon].
+  crcache should be gone. [Optional features may require daemons].
 
 * Be able to organise computing resources - not all things are equal. (No
   explict modelling needed - just provide a language for users to differentiate
@@ -76,11 +79,19 @@ Concepts
 
 To deal with compute clouds (such as Openstack or EC2) we need to allow for
 configuration for a whole class of resources at once. This implies a minimum
-of two concepts:
+of three concepts:
 
-1. A source of compute resources.
+1. Individual resources, which represent a computing context we can run commands
+   in. Resources need a unique name for users to address them, and we need to
+   have a type such that we can dispatch the right code (e.g. ssh, subprocess,
+   whatever) when requested to action things.
 
-2. Individual resources.
+2. A source of compute resources, which act as a factory for individual
+   resources. A given source is the combination of of a source type with
+   the user supplied parameters for that type to make a concrete source.
+
+3. A parameterisable source type, which is selected by the user to configure
+   things.
 
 Any given project will have its own configuration to perform on a machine
 (e.g. installing dependencies, checking out source code). This could imply a
@@ -218,6 +229,11 @@ LXC source
 
 Make LXC containers. Same basic options as chroots.
 
+Docker source
+-------------
+
+Likewise.
+
 Cloud source
 ------------
 
@@ -261,6 +277,12 @@ have the more getting this right will matter.
 Users may want to control this - e.g. to deal with poor CPU topologies so
 offering an extension point to override (or perhaps mutate) the auto-detected
 value makes sense. OTOH users could just wrap crcache calls.
+
+An important distinction to surface is the difference between machines and
+concurrency within a machine. Tools like testrepository wish to be able to
+query the concurrency at both levels - but we can perhaps let such tools
+deal with crcache at the level of 'machine' and query concurrency within
+a machine themselves.
 
 Running tasks
 -------------
