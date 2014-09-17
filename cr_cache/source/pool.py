@@ -20,7 +20,7 @@ class Source(source.AbstractSource):
     """A pool of other sources.
     
     Configured via
-    sources=name,name,...
+    sources: [name,name,..]
     in the config.
 
     Each source will be obtained from the get_source callback (which should
@@ -29,8 +29,8 @@ class Source(source.AbstractSource):
     """
 
     def _init(self):
-        source_names = self.config.get('DEFAULT', 'sources')
-        self.children = list(map(self.get_source, source_names.split(',')))
+        source_names = self.config.get('sources')
+        self.children = list(map(self.get_source, source_names))
         child_maximums = list(map(lambda x:x.maximum, self.children))
         if 0 not in child_maximums:
             self.maximum = sum(child_maximums)

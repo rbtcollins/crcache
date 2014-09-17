@@ -14,14 +14,14 @@
 
 """Configuration of cr_cache."""
 
-import extras
-
-ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 import os.path
+
+import yaml
 
 from cr_cache import cache
 from cr_cache.source import find_source_type
 from cr_cache.store import local as local_store
+
 
 def default_path():
     """Return a list of directories to search for configuration data.
@@ -74,16 +74,17 @@ class Config(object):
             return self._sources[name]
         path = self._source_dirs.get(name)
         if name == 'local' and path is None:
-            config = ConfigParser.ConfigParser()
+            config = {}
             source_type = find_source_type('local')
         else:
-            config = ConfigParser.ConfigParser()
-            config.read(os.path.join(path, 'source.conf'))
-            source_type = find_source_type(config.get('DEFAULT', 'type'))
+            path = os.path.join(path, 'source.conf')
+            with open(path, 'rt') as f:
+                config = yaml.safe_load(f)
+            source_type = find_source_type(config['type'])
         source = source_type(config, self.get_source)
         kwargs = {}
-        if config.has_option('DEFAULT', 'reserve'):
-            reserve = int(config.get('DEFAULT', 'reserve'))
+        if 'reserve' in config:
+            reserve = int(config['reserve'])
             kwargs['reserve'] = reserve
         result = cache.Cache(name, self._store, source, **kwargs)
         self._sources[name] = result

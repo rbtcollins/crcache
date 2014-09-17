@@ -18,6 +18,7 @@ import os.path
 
 from fixtures import Fixture
 from testtools.matchers import Is, IsInstance
+import yaml
 
 from cr_cache import config
 from cr_cache.source import model
@@ -46,12 +47,13 @@ class SourceConfigFixture(Fixture):
         homedir_config = os.path.join(os.environ['HOME'], '.config', 'crcache')
         source_dir = os.path.join(homedir_config, 'sources', self._name)
         os.makedirs(source_dir)
+        conf = {'type':'model'}
+        if self._reserve is not None:
+            conf['reserve'] = str(self._reserve)
+        if self._sources is not None:
+            conf['sources'] = self._sources.split(',')
         with open(os.path.join(source_dir, 'source.conf'), 'wt') as f:
-            f.write("[DEFAULT]\ntype=model\n")
-            if self._reserve is not None:
-                f.write('reserve=%s\n' % self._reserve)
-            if self._sources is not None:
-                f.write('sources=%s\n' % self._sources)
+            yaml.safe_dump(conf, f)
 
 
 class TestConfig(TestCase):

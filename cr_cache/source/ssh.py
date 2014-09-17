@@ -25,7 +25,7 @@ class Source(source.AbstractSource):
 
     def _init(self):
         self.maximum = 1
-        self.hostname = self.config.get('DEFAULT', 'ssh_host')
+        self.hostname = self.config['ssh_host']
 
     def provision(self, count):
         if count > 1:

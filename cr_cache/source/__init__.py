@@ -22,8 +22,7 @@ model : for testing.
 class AbstractSource(object):
     """Defines the contract for a source.
     
-    :attr config: The ConfigParser object containing the configuration of the
-        source.
+    :attr config: A dict containing the configuration of the source.
     :attr get_source: The configured callback to obtain other sources.
     :attr children: Cache child objects, used for status and introspection.
         May only be read from, not mutated.
@@ -34,8 +33,7 @@ class AbstractSource(object):
     def __init__(self, config, get_source):
         """Create an AbstractSource.
 
-        :param config: A ConfigParser config containing the configuration for
-            the source.
+        :param config: A dict containing the configuration of the source.
         :param get_source: A callback to get a new source (used when sources
             layer).
         """

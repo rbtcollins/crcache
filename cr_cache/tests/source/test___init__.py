@@ -14,9 +14,6 @@
 
 """Tests for the crcache.source interface."""
 
-import extras
-
-ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 from io import StringIO
 import subprocess
 
@@ -67,24 +64,19 @@ def find_src_address():
 source_implementations = []
 source_implementations.append(('model',
     {'source_factory': model.Source,
-    'reference_config': u"""""",
+    'reference_config': {},
     'test_maximum': 0}))
 source_implementations.append(('pool',
     {'source_factory': pool.Source,
-    'reference_config': u"""[DEFAULT]
-sources=a,b,c
-""",
+    'reference_config': {'sources': ['a', 'b', 'c']},
     'test_maximum': 0}))
 source_implementations.append(('local',
     {'source_factory': local.Source,
-    'reference_config': u"""[DEFAULT]
-""",
+    'reference_config': {},
     'test_maximum': 1}))
 source_implementations.append(('ssh',
     {'source_factory': ssh.Source,
-    'reference_config': u"""[DEFAULT]
-ssh_host=%s
-""" % find_src_address(),
+    'reference_config': {'ssh_host': find_src_address()},
     'test_maximum': 1}))
 
 
@@ -101,10 +93,7 @@ class TestSourceInterface(TestCase):
             child_sources.append(name)
             result = Cache(name, store, backend)
             return result
-        conf_file = StringIO(self.reference_config)
-        config = ConfigParser.ConfigParser()
-        config.readfp(conf_file)
-        return self.source_factory(config, get_source)
+        return self.source_factory(self.reference_config, get_source)
 
     def test_construct_signature(self):
         # Check that this source type will be constructable by the load

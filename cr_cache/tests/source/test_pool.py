@@ -14,10 +14,6 @@
 
 """Tests for the crcache.source.pool module."""
 
-import extras
-
-ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
-
 from testtools.matchers import Equals, MatchesAny
 
 from cr_cache import cache
@@ -28,8 +24,8 @@ from cr_cache.tests import TestCase
 class TestPoolSource(TestCase):
 
     def test_simple_construction(self):
-        config = ConfigParser.ConfigParser()
-        config.set('DEFAULT', 'sources', 'a,b')
+        config = {}
+        config['sources'] = ['a', 'b']
         store = memory.Store({})
         backend = model.Source(None, None)
         sources = {}
@@ -46,8 +42,8 @@ class TestPoolSource(TestCase):
             Equals(set(['a-0', 'b-1', 'b-2']))))
 
     def test_discard_returns_to_child_cache(self):
-        config = ConfigParser.ConfigParser()
-        config.set('DEFAULT', 'sources', 'a,b')
+        config = {}
+        config['sources'] = ['a', 'b']
         store = memory.Store({})
         backend = model.Source(None, None)
         sources = {}
@@ -65,8 +61,8 @@ class TestPoolSource(TestCase):
         self.assertEqual(set(['b-1']), sources['b'].provision(1))
 
     def test_sums_component_maximums(self):
-        config = ConfigParser.ConfigParser()
-        config.set('DEFAULT', 'sources', 'a,b')
+        config = {}
+        config['sources'] = ['a', 'b']
         store = memory.Store({})
         backend = model.Source(None, None)
         sources = {}

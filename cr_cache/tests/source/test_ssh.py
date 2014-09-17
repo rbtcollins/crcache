@@ -14,10 +14,6 @@
 
 """Tests for the crcache.source.ssh module."""
 
-import extras
-
-ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
-
 from testtools.matchers import Equals, MatchesAny, raises
 
 from cr_cache import cache
@@ -28,14 +24,14 @@ from cr_cache.tests import TestCase
 class TestSSHSource(TestCase):
 
     def test_basics(self):
-        config = ConfigParser.ConfigParser()
+        config = {}
         store = memory.Store({})
         sources = {}
         # Needs a ssh_host configured.
         self.assertThat(
             lambda: ssh.Source(config, sources.__getitem__),
-            raises(ConfigParser.NoOptionError))
-        config.set('DEFAULT', 'ssh_host', 'localhost')
+            raises(KeyError))
+        config['ssh_host'] = 'localhost'
         source = ssh.Source(config, sources.__getitem__)
         resources = source.provision(1)
         source.discard(resources)

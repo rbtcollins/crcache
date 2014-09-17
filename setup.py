@@ -97,6 +97,7 @@ setup(name='crcache',
         ],
       install_requires=[
         'extras',
+        'PyYAML',
         'six',
         ],
       setup_requires=[

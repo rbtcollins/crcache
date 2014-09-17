@@ -14,9 +14,6 @@
 
 """Tests for the crcache resource cache."""
 
-import extras
-
-ConfigParser = extras.try_imports(['ConfigParser', 'configparser'])
 import os.path
 
 from testtools.matchers import Equals, MatchesAny, raises
@@ -40,8 +37,8 @@ class TestCache(TestCase):
         c = cache.Cache("foo", store, source, maximum=4)
         # If a source has children, then
         c = cache.Cache("c", store, source, reserve=2, maximum=4)
-        config = ConfigParser.ConfigParser()
-        config.set("DEFAULT", "sources", "c")
+        config = {}
+        config['sources'] = ['c']
         children = {'c': c}
         p = pool.Source(config, children.__getitem__)
         # maximum is clamped to sum() child maximums.
@@ -49,12 +46,12 @@ class TestCache(TestCase):
         # Except when any child is unlimited
         c2 = cache.Cache("c2", store, source)
         children['c2'] = c2
-        config.set("DEFAULT", "sources", "c,c2")
+        config['sources'] = ['c', 'c2']
         p = pool.Source(config, children.__getitem__)
         self.assertEqual(10, cache.Cache("bar", store, p, maximum=10).maximum)
 
     def test_maximum_capped_by_source_maximum(self):
-        config = ConfigParser.ConfigParser()
+        config = {}
         source = local.Source(config, None)
         store = memory.Store({})
         # Unlimited case.

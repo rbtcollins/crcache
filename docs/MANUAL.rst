@@ -56,25 +56,24 @@ configurations for a single source (such as ``myprojectsource``) then acquiring
 a resource from one such config and returning it via the other may happen.
 This is usually super confusing, so we recommend against it.
 
-The file ``source.conf`` is a .ini file that controls basic metadata for the
+The file ``source.conf`` is a yaml file that controls basic metadata for the
 source::
 
-    [DEFAULT]
-    ; What sort of source is this?
-    type=[local|pool|ssh]
-    ; Do not discard instances if less than this many are running.
-    ; Defaults to 0 - avoids caching expensive resources w/out warning.
-    reserve=int
-    ; Do not scale out beyond this many instances.
-    ; Defaults to 0 - no limit.
-    maximum=int
-    ; Override the concurrency of returned instances, rather than probing.
-    ; Defaults to 0 - autoprobe.
-    concurrency=int
-    ; For pools only
-    sources=sourcename,sourcename,...
-    ; For ssh only
-    ssh_host=string
+    # What sort of source is this?
+    type: [local|pool|ssh]
+    # Do not discard instances if less than this many are running.
+    # Defaults to 0 - avoids caching expensive resources w/out warning.
+    reserve: int
+    # Do not scale out beyond this many instances.
+    # Defaults to 0 - no limit.
+    maximum: int
+    # Override the concurrency of returned instances, rather than probing.
+    # Defaults to 0 - autoprobe.
+    concurrency: int
+    # For pools only
+    sources: [sourcename,sourcename,...]
+    # For ssh only
+    ssh_host: string
 
 If a directory called ``provision.d`` exists as a sibling to ``source.conf`` then
 its contents will be run as they are provisioned (using run-parts). The resource
